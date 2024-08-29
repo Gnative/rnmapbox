@@ -77,10 +77,11 @@ class CameraUpdateItem(
             }
         }
         val map = mMap.get()
-        if (map == null) {
+        if (map == null || mCameraUpdate.center == null) {
             isCameraActionCancelled = true
             return
         }
+
         val animationOptions = MapAnimationOptions.Builder();
 
         // A zero-duration flyTo writes center and zoom as separate setCamera
