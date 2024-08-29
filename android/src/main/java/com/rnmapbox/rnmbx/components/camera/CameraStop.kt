@@ -2,17 +2,19 @@ package com.rnmapbox.rnmbx.components.camera
 
 import android.animation.Animator
 import android.content.Context
-import com.rnmapbox.rnmbx.utils.GeoJSONUtils.toPointGeometry
-import com.rnmapbox.rnmbx.utils.GeoJSONUtils.toLatLng
-import com.rnmapbox.rnmbx.utils.GeoJSONUtils.toLatLngBounds
-import com.rnmapbox.rnmbx.utils.LatLngBounds
-import com.rnmapbox.rnmbx.components.mapview.RNMBXMapView
-import com.mapbox.maps.CameraOptions
 import com.facebook.react.bridge.ReadableMap
 import com.mapbox.geojson.FeatureCollection
+import com.mapbox.geojson.Point
+import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.EdgeInsets
+import com.mapbox.maps.ScreenCoordinate
 import com.rnmapbox.rnmbx.components.camera.constants.CameraMode
+import com.rnmapbox.rnmbx.components.mapview.RNMBXMapView
+import com.rnmapbox.rnmbx.utils.GeoJSONUtils.toLatLng
+import com.rnmapbox.rnmbx.utils.GeoJSONUtils.toLatLngBounds
+import com.rnmapbox.rnmbx.utils.GeoJSONUtils.toPointGeometry
 import com.rnmapbox.rnmbx.utils.LatLng
+import com.rnmapbox.rnmbx.utils.LatLngBounds
 
 class CameraStop {
     private var mBearing: Double? = null
@@ -119,19 +121,31 @@ class CameraStop {
         val cameraPadding = intArrayOf(paddingLeft, paddingTop, paddingRight, paddingBottom)
         val cameraPaddingClipped = clippedPadding(cameraPadding, mapView)
         val cameraPaddingEdgeInsets = convert(cameraPaddingClipped)
-        builder.padding(cameraPaddingEdgeInsets)
 
         if (mLatLng != null) {
+            builder.padding(cameraPaddingEdgeInsets)
             builder.center(mLatLng!!.point)
         } else if (mBounds != null) {
+            val coordinates = listOf<Point>(
+                mBounds!!.toBounds().northeast,
+                mBounds!!.toBounds().southwest
+            )
             val tilt = if (mTilt != null) mTilt!! else currentCamera.pitch
             val bearing = if (mBearing != null) mBearing!! else currentCamera.bearing
 
-            val boundsCamera = map.cameraForCoordinateBounds(
-                mBounds!!.toBounds(),
+            val boundsCamera = map.cameraForCoordinates(
+                coordinates,
+                CameraOptions.Builder()
+                    .anchor(null)
+                    .center(null)
+                    .padding(EdgeInsets(0.0, 0.0,0.0, 0.0))
+                    .zoom(0.0)
+                    .pitch(tilt)
+                    .bearing(bearing)
+                    .build(),
                 cameraPaddingEdgeInsets,
-                bearing,
-                tilt
+                null,
+                ScreenCoordinate(0.0, 0.0)
             )
             builder.center(boundsCamera.center)
             builder.anchor(boundsCamera.anchor)
