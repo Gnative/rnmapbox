@@ -121,9 +121,9 @@ class CameraStop {
         val cameraPadding = intArrayOf(paddingLeft, paddingTop, paddingRight, paddingBottom)
         val cameraPaddingClipped = clippedPadding(cameraPadding, mapView)
         val cameraPaddingEdgeInsets = convert(cameraPaddingClipped)
-        builder.padding(cameraPaddingEdgeInsets)
 
         if (mLatLng != null) {
+            builder.padding(cameraPaddingEdgeInsets)
             builder.center(mLatLng!!.point)
         } else if (mBounds != null) {
             val coordinates = listOf<Point>(
@@ -136,6 +136,10 @@ class CameraStop {
             val boundsCamera = map.cameraForCoordinates(
                 coordinates,
                 CameraOptions.Builder()
+                    .anchor(null)
+                    .center(null)
+                    .padding(EdgeInsets(0.0, 0.0,0.0, 0.0))
+                    .zoom(0.0)
                     .pitch(tilt)
                     .bearing(bearing)
                     .build(),
