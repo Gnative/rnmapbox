@@ -1,6 +1,7 @@
 export { default as ChangeLayerColor } from './ChangeLayerColor';
 export { default as CreateOfflineRegion } from './CreateOfflineRegion';
 export { default as OfflineExample } from './OfflineExample';
+export { default as OfflineLegacyExample } from './OfflineLegacyExample';
 export { default as Ornaments } from './Ornaments';
 export { default as PointInMapView } from './PointInMapView';
 export { default as ShowAndHideLayer } from './ShowAndHideLayer';

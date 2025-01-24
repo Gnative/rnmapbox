@@ -14,14 +14,14 @@ extension Date {
 @objc(RNMBXOfflineModule)
 class RNMBXOfflineModule: RCTEventEmitter {
   var hasListeners = false
-  
+
   static let RNMapboxInfoMetadataKey = "_rnmapbox"
 
   enum Callbacks : String {
     case error = "MapboOfflineRegionError"
     case progress = "MapboxOfflineRegionProgress"
   }
-  
+
   enum State : String {
     case invalid
     case inactive
@@ -29,7 +29,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
     case complete
     case unknown
   }
-  
+
   lazy var offlineManager : OfflineManager = {
     #if RNMBX_11
     return OfflineManager()
@@ -37,7 +37,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
     return OfflineManager(resourceOptions: .init(accessToken: RNMBXModule.accessToken!))
     #endif
   }()
-  
+
   lazy var offlineRegionManager: OfflineRegionManager = {
     #if RNMBX_11
     return OfflineRegionManager()
@@ -49,7 +49,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
   lazy var tileStore : TileStore = {
     return TileStore.default
   }()
-  
+
   struct TileRegionPack {
     init(name: String, state: State = .unknown, progress: TileRegionLoadProgress? = nil, metadata: [String:Any]) {
       self.name = name
@@ -78,7 +78,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
         }
       }
     }
-    
+
     init(name: String,
          state: State = .unknown,
          styleURI: StyleURI,
@@ -94,7 +94,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
       self.bounds = bounds
       self.zoomRange = zoomRange
       self.tilesets = tilesets
-      
+
       var metadata = metadata
       metadata[RNMapboxInfoMetadataKey] = [
         "styleURI": styleURI.rawValue,
@@ -117,9 +117,9 @@ class RNMBXOfflineModule: RCTEventEmitter {
     var zoomRange: ClosedRange<UInt8>? = nil
     var styleURI: StyleURI? = nil
   }
-  
+
   lazy var tileRegionPacks : [String: TileRegionPack] = [:]
-  
+
   var progressEventThrottle : (
     waitBetweenEvents: Double?,
     lastSentTimestamp: Double?,
@@ -129,25 +129,25 @@ class RNMBXOfflineModule: RCTEventEmitter {
     nil,
     nil
   )
-  
+
   @objc override
   public func startObserving() {
     super.startObserving()
     hasListeners = true
   }
-  
+
   @objc override
   public func stopObserving() {
     super.stopObserving()
     hasListeners = false
   }
-  
+
   @objc
   override
   static public func requiresMainQueueSetup() -> Bool {
     return true
   }
-  
+
   @objc
   override
   public func constantsToExport() -> [AnyHashable: Any]! {
@@ -159,9 +159,9 @@ class RNMBXOfflineModule: RCTEventEmitter {
   public func supportedEvents() -> [String] {
     return [Callbacks.error.rawValue, Callbacks.progress.rawValue]
   }
-  
+
   // MARK: react methods
-  
+
   @objc
   func createPack(_ options: NSDictionary, resolver: @escaping RCTPromiseResolveBlock, rejecter: @escaping RCTPromiseRejectBlock) {
     DispatchQueue.main.async {
@@ -170,13 +170,13 @@ class RNMBXOfflineModule: RCTEventEmitter {
         var metadata = try JSONSerialization.jsonObject(with: metadataStr.data(using: .utf8)!, options: []) as! [String:Any]
         metadata["styleURI"] = options["styleURL"]
         let id = metadata["name"] as! String
-        
+
         let boundsStr = options["bounds"] as! String
         let boundsData = boundsStr.data(using: .utf8)
         var boundsFC = try JSONDecoder().decode(FeatureCollection.self, from: boundsData!)
-        
+
         var bounds = self.convertPointPairToBounds(RNMBXFeatureUtils.fcToGeomtry(boundsFC))
-        
+
         let actPack = RNMBXOfflineModule.TileRegionPack(
           name: id,
           styleURI: StyleURI(rawValue: options["styleURL"] as! String)!,
@@ -188,7 +188,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
 
         self.tileRegionPacks[id] = actPack
         self.startLoading(pack: actPack)
-        
+
         resolver([
           "bounds": boundsStr,
           "metadata": String(data:try! JSONSerialization.data(withJSONObject: metadata, options: [.prettyPrinted]), encoding: .utf8)
@@ -198,7 +198,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
       }
     }
   }
-  
+
   @objc
   func getPackStatus(_ name: String,
                      resolver: @escaping RCTPromiseResolveBlock,
@@ -207,7 +207,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
       rejecter("RNMBXOfflineModule.getPackStatus", "pack \(name) not found", nil)
       return
     }
-    
+
     tileStore.tileRegion(forId: name) { result in
       switch result {
       case .success(let region):
@@ -232,7 +232,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
       }
     }
   }
-  
+
   @objc
   func resumePackDownload(_ name: String, resolver: RCTPromiseResolveBlock, rejecter: RCTPromiseRejectBlock)
   {
@@ -243,7 +243,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
       rejecter("resumePackDownload", "Unknown offline pack: \(name)", nil)
     }
   }
-  
+
   @objc
   func pausePackDownload(_ name: String, resolver: RCTPromiseResolveBlock, rejecter: RCTPromiseRejectBlock)
   {
@@ -254,13 +254,13 @@ class RNMBXOfflineModule: RCTEventEmitter {
       rejecter("pausePackDownload", "Unknown offline region: \(name)", nil)
     }
   }
-  
+
   @objc
   func setTileCountLimit(_ limit: NSNumber) {
     self.offlineRegionManager.setOfflineMapboxTileCountLimitForLimit(limit.uint64Value)
   }
-  
-  
+
+
   @objc
   func deletePack(_ name: String,
                   resolver: RCTPromiseResolveBlock,
@@ -269,25 +269,25 @@ class RNMBXOfflineModule: RCTEventEmitter {
     guard let pack = tileRegionPacks[name] else {
       return resolver(nil)
     }
-    
+
     guard pack.state != .invalid else {
       return rejecter("deletePack", "Pack: \(name) has already been deleted", nil)
     }
-    
+
     tileStore.removeTileRegion(forId: name)
     tileRegionPacks[name]!.state = .invalid
     resolver(nil)
   }
-  
+
   @objc
   func migrateOfflineCache(_ resolve : @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
     // Old and new cache file paths
     let srcURL = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("/Library/Application Support/com.mapbox.examples/.mapbox/cache.db")
-    
+
     let destURL = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("/Library/Application Support/.mapbox/map_data/map_data.db")
-    
+
     let fileManager = FileManager.default
-    
+
     do {
       try fileManager.createDirectory(at: destURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
       try fileManager.moveItem(at: srcURL, to: destURL)
@@ -326,7 +326,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
       }
     }
   }
-  
+
   @objc
   func getPacks(_ resolve : @escaping RCTPromiseResolveBlock, rejecter: @escaping RCTPromiseRejectBlock) {
     DispatchQueue.main.async {
@@ -340,7 +340,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
       }
     }
   }
-  
+
   func startLoading(pack: TileRegionPack) {
     let id = pack.name
     let metadata = pack.metadata
@@ -358,11 +358,11 @@ class RNMBXOfflineModule: RCTEventEmitter {
       RNMBXLogError("RNMBXOfflineModule.startLoading failed as there is no styleURI in pack")
       return
     }
-      
+
     var downloadError = false
-    
+
     let stylePackLoadOptions = StylePackLoadOptions(glyphsRasterizationMode: .ideographsRasterizedLocally, metadata: pack.metadata)!
-    
+
     #if RNMBX_11
     let threadedOfflineManager = OfflineManager()
     taskGroup.enter()
@@ -405,7 +405,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
       descriptors.append(tilesetDescriptor)
     }
     #endif
-    
+
     let loadOptions = TileRegionLoadOptions(
       geometry: bounds, // RNMBXFeatureUtils.geometryToGeometry(bounds),
       descriptors: descriptors,
@@ -413,9 +413,9 @@ class RNMBXOfflineModule: RCTEventEmitter {
       acceptExpired: true,
       networkRestriction: .none,
       averageBytesPerSecond: nil)
-    
+
     var lastProgress : TileRegionLoadProgress? = nil
-    
+
     taskGroup.enter()
     let task = self.tileStore.loadTileRegion(forId: id, loadOptions: loadOptions!, progress: {
       progress in
@@ -440,7 +440,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
             case .failure(let error):
                 Logger.log(level: .warn,
                            message: "RNMBXOfflineModule: startLoading: error loading tile region: " + error.localizedDescription)
-                
+
                 self.tileRegionPacks[id]!.state = .inactive
                 self.offlinePackDidReceiveError(name: id, error: error)
             }
@@ -458,13 +458,13 @@ class RNMBXOfflineModule: RCTEventEmitter {
     self.tileRegionPacks[id]!.cancelables = [task]
     #endif
   }
-  
+
   func convertRegionsToJSON(regions: [TileRegion], resolve: @escaping RCTPromiseResolveBlock, rejecter: @escaping RCTPromiseRejectBlock) {
     let taskGroup = DispatchGroup()
-    
+
     var geomteryResults : [String: (Result<Geometry,Error>,TileRegion)] = [:]
     var metadataResults : [String: Result<Any,Error>] = [:]
-    
+
     for region in regions {
       taskGroup.enter()
       taskGroup.enter()
@@ -472,13 +472,13 @@ class RNMBXOfflineModule: RCTEventEmitter {
         geomteryResults[region.id] = (result, region)
         taskGroup.leave()
       }
-      
+
       tileStore.tileRegionMetadata(forId: region.id) { (result) in
         metadataResults[region.id] = result
         taskGroup.leave()
       }
     }
-    
+
     taskGroup.notify(queue: .main) {
       let firstError = geomteryResults.first { (key,result_and_region) in
         switch result_and_region.0 {
@@ -488,7 +488,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
           return false
         }
       }
-      
+
       if let firstError = firstError {
         switch firstError.value.0 {
         case .failure(let error):
@@ -498,7 +498,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
           fatalError("convertRegionsToJson:Expected failure but was success")
         }
       }
-      
+
       let results = geomteryResults.map { (id, result) -> (String, (Geometry,TileRegion, [String:Any]?)) in
         switch result.0 {
         case .failure(_):
@@ -507,7 +507,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
           return (id, (geometry,result.1,(try? metadataResults[id]?.get()) as? [String:Any]))
         }
       }
-      
+
       resolve(results.map { (id, geometry_region_metadata) -> [String:Any] in
         let (geometry, region, metadata) = geometry_region_metadata
         let ret = self.convertRegionToJSON(region: region, geometry: geometry, metadata: metadata)
@@ -517,32 +517,32 @@ class RNMBXOfflineModule: RCTEventEmitter {
           progress: self.toProgress(region: region),
           metadata: logged("RNMBXOfflineModule.getPacks metadata is null") { metadata } ?? [:]
         )
-        
+
         if ((region.hasCompleted())) {
           pack.state = .complete
         }
-        
+
         self.tileRegionPacks[region.id] = pack
-        
+
         return ret
       })
     }
   }
-  
+
   func convertRegionToJSON(region: TileRegion, geometry: Geometry, metadata: [String:Any]?) -> [String:Any] {
     let bb = RNMBXFeatureUtils.boundingBox(geometry: geometry)
-    
+
     if let bb = bb {
       let jsonBounds = [
         bb.northEast.longitude, bb.northEast.latitude,
         bb.southWest.longitude, bb.southWest.latitude
       ]
-      
+
       let completed = (region.completedResourceCount == region.requiredResourceCount)
 
       var metadata : [String:Any] = metadata ?? [:]
       metadata["name"] = region.id
-      
+
       var result : [String:Any] = [
         "requiredResourceCount": region.requiredResourceCount,
         "completedResourceCount": region.completedResourceCount,
@@ -565,11 +565,11 @@ class RNMBXOfflineModule: RCTEventEmitter {
     }
     return [:]
   }
-    
+
   func toProgress(region: TileRegion) -> TileRegionLoadProgress? {
     return TileRegionLoadProgress(completedResourceCount: region.completedResourceCount, completedResourceSize: region.completedResourceSize, erroredResourceCount: 0, requiredResourceCount: region.requiredResourceCount, loadedResourceCount: 0, loadedResourceSize: 0)
   }
-  
+
   func convertPointPairToBounds(_ bounds: Geometry) -> Geometry {
     guard case .geometryCollection(let gc) = bounds else {
       return bounds
@@ -595,7 +595,7 @@ class RNMBXOfflineModule: RCTEventEmitter {
       ]
     ]))
   }
-  
+
   func _sendEvent(_ name:String, event: RNMBXEvent) {
     if !hasListeners {
       return
@@ -629,22 +629,22 @@ class RNMBXOfflineModule: RCTEventEmitter {
     }
     return result
   }
-  
+
   func _makeRegionStatusPayload(pack: TileRegionPack) -> [String:Any?] {
     return _makeRegionStatusPayload(pack.name, progress: pack.progress, state: pack.state, metadata: pack.metadata)
   }
-  
+
   func makeProgressEvent(_ name: String, progress: TileRegionLoadProgress, state: State) -> RNMBXEvent {
     RNMBXEvent(type: .offlineProgress, payload: self._makeRegionStatusPayload(name, progress: progress, state: state, metadata: nil))
   }
-  
+
   func offlinePackProgressDidChange(progress: TileRegionLoadProgress, metadata: [String:Any], state: State) {
     if self.shouldSendProgressEvent(progress: progress, state: state) {
       let event = makeProgressEvent(metadata["name"] as! String, progress: progress, state: state)
       self._sendEvent(Callbacks.progress.rawValue, event: event)
     }
   }
-  
+
   func offlinePackDidReceiveError(name: String, error: Error) {
     let event = RNMBXEvent(type: .offlineError, payload: ["name": name, "message": error.localizedDescription])
     self._sendEvent(Callbacks.error.rawValue, event: event)
@@ -657,29 +657,29 @@ extension RNMBXOfflineModule {
   func setProgressEventThrottle(_ throttleValue: NSNumber) {
     progressEventThrottle.waitBetweenEvents = throttleValue.doubleValue
   }
-  
+
 
   func shouldSendProgressEvent(progress: TileRegionLoadProgress, state: State) -> Bool
   {
     let currentTimestamp: Double = CACurrentMediaTime() * 1000.0
-    
+
     guard let lastSentState = progressEventThrottle.lastSentState, lastSentState == state else {
       progressEventThrottle.lastSentState = state
       progressEventThrottle.lastSentTimestamp = currentTimestamp
       return true
     }
-    
+
     guard let waitBetweenEvents = progressEventThrottle.waitBetweenEvents,
           let lastSentTimestamp = progressEventThrottle.lastSentTimestamp else {
       progressEventThrottle.lastSentTimestamp = currentTimestamp
       return true;
     }
-    
+
     if (currentTimestamp - lastSentTimestamp > waitBetweenEvents) {
       progressEventThrottle.lastSentTimestamp = currentTimestamp
       return true;
     }
-     
+
     return false;
   }
 }

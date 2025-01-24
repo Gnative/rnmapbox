@@ -323,6 +323,20 @@
       },
       {
         "metadata": {
+          "title": "Offline Legacy Example",
+          "tags": [
+            "offlineManagerLegacy#createPack",
+            "offlineManagerLegacy#getPack",
+            "offlineManagerLegacy#getPacks"
+          ],
+          "docs": "\nDemonstates basic use of offlineManagerLegacy api.\n"
+        },
+        "fullPath": "example/src/examples/Map/OfflineLegacyExample.tsx",
+        "relPath": "Map/OfflineLegacyExample.tsx",
+        "name": "OfflineLegacyExample"
+      },
+      {
+        "metadata": {
           "title": "Ornaments",
           "tags": [
             "MapView#logoEnabled",
