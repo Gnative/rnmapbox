@@ -1,0 +1,1 @@
+//# sourceMappingURL=react-native.mock.d.ts.map
