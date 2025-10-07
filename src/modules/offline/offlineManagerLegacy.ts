@@ -129,10 +129,12 @@ class OfflineManagerLegacy {
 
     const nativeOfflinePack =
       await MapboxOfflineManager.createPack(packOptions);
-    this._offlinePacks[packOptions.name] = new OfflinePackLegacy(nativeOfflinePack);
+    this._offlinePacks[packOptions.name] = new OfflinePackLegacy(
+      nativeOfflinePack,
+    );
     this.subscribe(packOptions.name, progressListener, errorListener);
 
-    return this._offlinePacks[packOptions.name];
+    return this._offlinePacks[packOptions.name]!;
   }
 
   /**
@@ -246,7 +248,7 @@ class OfflineManagerLegacy {
     await this._initialize();
     return Object.keys(this._offlinePacks).map(
       (name) => this._offlinePacks[name],
-    ) as OfflinePack[];
+    ) as OfflinePackLegacy[];
   }
 
   /**
@@ -287,7 +289,7 @@ class OfflineManagerLegacy {
       if (totalProgressListeners === 0) {
         this.subscriptionProgress = OfflineModuleEventEmitter.addListener(
           RNMBXModule.OfflineCallbackName.Progress,
-          this._onProgress,
+          this._onProgress as any,
         );
       }
       this._progressListeners[packName] = progressListener;
@@ -298,7 +300,7 @@ class OfflineManagerLegacy {
       if (totalErrorListeners === 0) {
         this.subscriptionError = OfflineModuleEventEmitter.addListener(
           RNMBXModule.OfflineCallbackName.Error,
-          this._onError,
+          this._onError as any,
         );
       }
       this._errorListeners[packName] = errorListener;
@@ -369,7 +371,9 @@ class OfflineManagerLegacy {
     }
 
     const pack = this._offlinePacks[name];
-    this._progressListeners[name](pack, e.payload);
+    if (!pack) return; // Add guard
+
+    this._progressListeners[name]!(pack, e.payload); // Add non-null assertion
 
     // cleanup listeners now that they are no longer needed
     if (state === RNMBXModule.OfflinePackDownloadState.Complete) {
@@ -385,7 +389,9 @@ class OfflineManagerLegacy {
     }
 
     const pack = this._offlinePacks[name];
-    this._errorListeners[name](pack, e.payload);
+    if (!pack) return; // Add guard
+
+    this._errorListeners[name]!(pack, e.payload); // Add non-null assertion
   }
 
   _hasListeners(
