@@ -58,6 +58,7 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
             mLastLocation = location
             if (changed && (location != null) && shouldSendLocationEvent()) {
                 val locationEvent = LocationEvent(location)
+                locationEventThrottle.lastSentTimestamp = System.nanoTime()
                 emitOnLocationUpdate(locationEvent.toJSON())
             }
         }
