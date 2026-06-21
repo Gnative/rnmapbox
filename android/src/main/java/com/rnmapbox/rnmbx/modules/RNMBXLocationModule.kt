@@ -18,6 +18,7 @@ data class LocationEventThrottle(var waitBetweenEvents: Double? = null, var last
 class RNMBXLocationModule(reactContext: ReactApplicationContext) :
     NativeRNMBXLocationModuleSpec(reactContext) {
     private var isEnabled = false
+    private var headingUpdatesEnabled = true
     private var mMinDisplacement = 0f
     private val locationManager: LocationManager? = getInstance(reactContext)
     private var mLastLocation: Location? = null
@@ -49,7 +50,7 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
                     lastLocation.longitude != location.longitude ||
                     lastLocation.altitude != location.altitude ||
                     lastLocation.accuracy != location.accuracy ||
-                    lastLocation.bearing != location.bearing
+                    (headingUpdatesEnabled && lastLocation.bearing != location.bearing)
                 ) {
                     changed = true
                 }
@@ -93,6 +94,11 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     override fun setRequestsAlwaysUse(requestsAlwaysUse: Boolean) {
         // IOS only. Ignored on Android.
+    }
+
+    @ReactMethod
+    override fun setHeadingUpdatesEnabled(enabled: Boolean) {
+        headingUpdatesEnabled = enabled
     }
 
     @ReactMethod

@@ -218,6 +218,12 @@ export class LocationManager {
     this._requestsAlwaysUse = requestsAlwaysUse;
   }
 
+  setHeadingUpdatesEnabled(enabled: boolean) {
+    if (MapboxLocationManager.setHeadingUpdatesEnabled) {
+      MapboxLocationManager.setHeadingUpdatesEnabled(enabled);
+    }
+  }
+
   _onUpdate(location: Location) {
     this._lastKnownLocation = location;
 

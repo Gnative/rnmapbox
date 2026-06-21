@@ -22,6 +22,7 @@ export interface Spec extends TurboModule {
   stop(): void;
   setRequestsAlwaysUse(requestsAlwaysUse: boolean): void;
   setMinDisplacement(minDisplacement: number): void;
+  setHeadingUpdatesEnabled(enabled: boolean): void;
   getLastKnownLocation(): Promise<LocationEvent['payload']>;
   simulateHeading(changesPerSecond: number, increment: number): void;
   setLocationEventThrottle(throttle: number): void;
