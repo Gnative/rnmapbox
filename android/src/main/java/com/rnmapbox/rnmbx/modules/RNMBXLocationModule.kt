@@ -96,6 +96,7 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
 
     private fun sendLocationEvent(location: Location) {
         mLastSentHeading = mLastHeading
+        locationEventThrottle.lastSentTimestamp = System.nanoTime()
         emitOnLocationUpdate(LocationEvent(location, mLastHeading).toJSON())
     }
 
