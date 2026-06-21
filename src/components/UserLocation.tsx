@@ -95,6 +95,13 @@ type Props = {
   minDisplacement?: number;
 
   /**
+   * Throttle events on iOS to reduce the number of location updates received
+   *
+   * @platform ios
+   */
+  throttleEvents?: number;
+
+  /**
    * Callback that is triggered on location icon press
    */
   onPress?: () => void;
@@ -103,6 +110,13 @@ type Props = {
    * Callback that is triggered on location update
    */
   onUpdate?: (location: Location) => void;
+
+  /**
+   * Disable heading-driven location broadcasts on iOS so JS only receives displacement-based updates.
+   *
+   * @platform ios
+   */
+  disableHeadingUpdates?: boolean;
 
   /**
    * @deprecated use LocationPuck component instead of UserLocationRenderMode.Native
@@ -141,6 +155,7 @@ class UserLocation extends React.Component<Props, UserLocationState> {
     showsUserHeadingIndicator: false,
     requestsAlwaysUse: false,
     minDisplacement: 0,
+    throttleEvents: 0,
     renderMode: UserLocationRenderMode.Normal,
   };
 
@@ -166,6 +181,10 @@ class UserLocation extends React.Component<Props, UserLocationState> {
     this._isMounted = true;
 
     locationManager.setMinDisplacement(this.props.minDisplacement || 0);
+    locationManager.setLocationEventThrottle(this.props.throttleEvents || 0);
+    locationManager.setHeadingUpdatesEnabled(
+      !(this.props.disableHeadingUpdates || false),
+    );
 
     await this.setLocationManager({
       running: this.needsLocationManagerRunning(),
@@ -181,9 +200,20 @@ class UserLocation extends React.Component<Props, UserLocationState> {
       running: this.needsLocationManagerRunning(),
     });
 
+    if (this.props.throttleEvents !== prevProps.throttleEvents) {
+      locationManager.setLocationEventThrottle(this.props.throttleEvents || 0);
+    }
+
     if (this.props.minDisplacement !== prevProps.minDisplacement) {
       locationManager.setMinDisplacement(this.props.minDisplacement || 0);
     }
+
+    if (this.props.disableHeadingUpdates !== prevProps.disableHeadingUpdates) {
+      locationManager.setHeadingUpdatesEnabled(
+        !(this.props.disableHeadingUpdates || false),
+      );
+    }
+
     if (this.props.requestsAlwaysUse !== prevProps.requestsAlwaysUse) {
       locationManager.setRequestsAlwaysUse(
         this.props.requestsAlwaysUse || false,
@@ -193,6 +223,9 @@ class UserLocation extends React.Component<Props, UserLocationState> {
 
   async componentWillUnmount() {
     this._isMounted = false;
+    if (this.props.disableHeadingUpdates !== undefined) {
+      locationManager.setHeadingUpdatesEnabled(true);
+    }
     await this.setLocationManager({ running: false });
   }
 
@@ -246,10 +279,12 @@ class UserLocation extends React.Component<Props, UserLocationState> {
       coordinates = [longitude, latitude];
     }
 
-    this.setState({
-      coordinates,
-      heading: heading ?? null,
-    });
+    if (this.props.renderMode === UserLocationRenderMode.Normal) {
+      this.setState({
+        coordinates,
+        heading: heading ?? null,
+      });
+    }
 
     if (this.props.onUpdate) {
       this.props.onUpdate(location);
