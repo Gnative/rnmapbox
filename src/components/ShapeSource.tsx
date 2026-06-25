@@ -46,6 +46,7 @@ export type Props = {
    * The contents of the source. A shape can represent a GeoJSON geometry, a feature, or a feature collection.
    */
   shape?:
+    | string
     | GeoJSON.GeometryCollection
     | GeoJSON.Feature
     | GeoJSON.FeatureCollection
@@ -164,6 +165,10 @@ export class ShapeSource extends NativeBridgeComponent(
     id: Mapbox.StyleSource.DefaultSourceID,
   };
 
+  _cachedShape?: Props['shape'];
+
+  _cachedShapeJSON?: string;
+
   constructor(props: Props) {
     super(props);
   }
@@ -260,7 +265,18 @@ export class ShapeSource extends NativeBridgeComponent(
     if (!this.props.shape) {
       return;
     }
-    return toJSONString(this.props.shape);
+    if (typeof this.props.shape === 'string') {
+      return this.props.shape;
+    }
+    if (this.props.shape === this._cachedShape && this._cachedShapeJSON) {
+      return this._cachedShapeJSON;
+    }
+
+    const shapeJSON = toJSONString(this.props.shape);
+    this._cachedShape = this.props.shape;
+    this._cachedShapeJSON = shapeJSON;
+
+    return shapeJSON;
   }
 
   _decodePayload(payload: OnPressEvent | string): OnPressEvent {
