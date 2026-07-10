@@ -151,3 +151,4 @@ BOT_SETUP.md
 
 # typescript
 **/tsconfig.tsbuildinfo
+.npmrc
