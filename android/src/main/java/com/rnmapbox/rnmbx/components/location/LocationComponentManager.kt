@@ -174,10 +174,7 @@ class LocationComponentManager(mapView: RNMBXMapView, context: Context) {
     }
 
     private fun useMapLocationProvider(mapView: RNMBXMapView) {
-        val provider = mapView.mapView.location.getLocationProvider()
-        if (provider != null) {
-            mLocationManager.provider = provider
-        }
+        mapView.mapView.location.setLocationProvider(mLocationManager.provider)
     }
 
 

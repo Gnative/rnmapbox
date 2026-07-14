@@ -202,6 +202,9 @@ public class RNMBXNativeUserLocation: UIView, RNMBXMapAndMapViewComponent {
 
   public func addToMap(_ map: RNMBXMapView, mapView: MapView, style: Style) {
     self.map = map
+    if let locationModule = RNMBXLocationModule.shared {
+      locationModule.override(for: mapView.location)
+    }
 
     _fetchImages(map)
     _apply()
