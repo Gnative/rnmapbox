@@ -1,6 +1,6 @@
 {
   "name": "@gnative/rnmapbox",
-  "version": "10.3.10-contours.1",
+  "version": "10.3.10-contours.2",
   "description": "Community-supported, open-source React Native library for building maps using Mapbox native maps SDK for iOS and Android",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.native.d.ts",
