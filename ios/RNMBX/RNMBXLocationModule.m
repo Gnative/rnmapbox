@@ -14,6 +14,9 @@ RCT_EXTERN_METHOD(setRequestsAlwaysUse:(BOOL)requestsAlwaysUse)
 
 RCT_EXTERN_METHOD(setLocationEventThrottle:(nonnull NSNumber *)throttleValue)
 
+RCT_EXTERN_METHOD(pauseUpdates)
+RCT_EXTERN_METHOD(resumeUpdates:(BOOL)clearAll)
+
 RCT_EXTERN_METHOD(simulateHeading:(nonnull NSNumber*)changesPerSecond increment:(nonnull NSNumber*))
 
 

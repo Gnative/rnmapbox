@@ -101,6 +101,7 @@ class LocationManager private constructor(private val context: Context) : Locati
     private var locationProvider: LocationProvider? = null
     private var nStarts : Int = 0
     private var isPaused : Boolean = false
+    private var mapUpdatesPauseCount : Int = 0
 
     var provider: LocationProvider
         get() {
@@ -145,6 +146,21 @@ class LocationManager private constructor(private val context: Context) : Locati
         isPaused = false
         if (nStarts > 0) {
             enable(false)
+        }
+    }
+
+    fun pauseUpdates() {
+        mapUpdatesPauseCount += 1
+    }
+
+    fun resumeUpdates(clearAll: Boolean = false) {
+        mapUpdatesPauseCount = if (clearAll) 0 else maxOf(0, mapUpdatesPauseCount - 1)
+        if (mapUpdatesPauseCount > 0) return
+
+        val provider = locationProvider
+        val location = lastLocation
+        if (provider != null && provider is LocationProviderForEngine && location != null) {
+            provider.notifyLocationUpdates(location)
         }
     }
 
@@ -259,7 +275,7 @@ class LocationManager private constructor(private val context: Context) : Locati
     override fun onSuccess(result: LocationEngineResult) {
         onLocationChanged(result?.lastLocation)
         val provider = locationProvider
-        if (provider != null && provider is LocationProviderForEngine) {
+        if (mapUpdatesPauseCount == 0 && provider != null && provider is LocationProviderForEngine) {
             provider.onSuccess(result)
         }
     }
