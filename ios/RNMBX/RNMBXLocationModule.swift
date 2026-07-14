@@ -126,13 +126,118 @@ extension RNMBXAppleLocationProviderProxy {
 }
 */
 
+// MARK: - Pausable location provider
+
+class RNMBXPausableLocationProvider: LocationProvider & HeadingProvider, LocationObserver, HeadingObserver {
+  private let provider = AppleLocationProvider()
+  private var observers: NSHashTable<AnyObject> = .weakObjects()
+  private var headingObservers: NSHashTable<AnyObject> = .weakObjects()
+  private var latestLocation: Location? = nil
+  private var pauseCount: Int = 0
+  private var isObservingLocation: Bool = false
+  private var isObservingHeading: Bool = false
+
+  public var options: AppleLocationProvider.Options {
+    get {
+      provider.options
+    }
+    set {
+      provider.options = newValue
+    }
+  }
+
+  func pauseUpdates() {
+    pauseCount += 1
+  }
+
+  func resumeUpdates(clearAll: Bool) {
+    pauseCount = clearAll ? 0 : max(0, pauseCount - 1)
+    guard pauseCount == 0 else { return }
+
+    if let latestLocation = latestLocation {
+      notifyLocationObservers(locations: [latestLocation])
+    }
+
+    if let latestHeading = provider.latestHeading {
+      notifyHeadingObservers(heading: latestHeading)
+    }
+  }
+
+  func addLocationObserver(for observer: LocationObserver) {
+    if !isObservingLocation {
+      provider.addLocationObserver(for: self)
+      isObservingLocation = true
+    }
+
+    observers.add(observer)
+  }
+
+  func removeLocationObserver(for observer: LocationObserver) {
+    observers.remove(observer)
+
+    if isObservingLocation && observers.allObjects.isEmpty {
+      provider.removeLocationObserver(for: self)
+      isObservingLocation = false
+    }
+  }
+
+  func getLastObservedLocation() -> Location? {
+    return latestLocation ?? provider.getLastObservedLocation()
+  }
+
+  var latestHeading: Heading? {
+    return provider.latestHeading
+  }
+
+  func add(headingObserver: HeadingObserver) {
+    if !isObservingHeading {
+      provider.add(headingObserver: self)
+      isObservingHeading = true
+    }
+
+    headingObservers.add(headingObserver)
+  }
+
+  func remove(headingObserver: HeadingObserver) {
+    headingObservers.remove(headingObserver)
+
+    if isObservingHeading && headingObservers.allObjects.isEmpty {
+      provider.remove(headingObserver: self)
+      isObservingHeading = false
+    }
+  }
+
+  func onLocationUpdateReceived(for locations: [Location]) {
+    latestLocation = locations.last
+    guard pauseCount == 0 else { return }
+    notifyLocationObservers(locations: locations)
+  }
+
+  func onHeadingUpdate(_ heading: MapboxMaps.Heading) {
+    guard pauseCount == 0 else { return }
+    notifyHeadingObservers(heading: heading)
+  }
+
+  private func notifyLocationObservers(locations: [Location]) {
+    for observer in observers.allObjects {
+      (observer as? LocationObserver)?.onLocationUpdateReceived(for: locations)
+    }
+  }
+
+  private func notifyHeadingObservers(heading: Heading) {
+    for observer in headingObservers.allObjects {
+      (observer as? HeadingObserver)?.onHeadingUpdate(heading)
+    }
+  }
+}
+
 // MARK: - RNMBXLocationModule
 
 @objc(RNMBXLocationModule)
 class RNMBXLocationModule: RCTEventEmitter {
   static weak var shared : RNMBXLocationModule? = nil
 
-  var _locationProvider : LocationProvider & HeadingProvider = AppleLocationProvider()
+  var _locationProvider : LocationProvider & HeadingProvider = RNMBXPausableLocationProvider()
   var locationUpdateObserver : Cancelable? = nil
   var locationHeadingObserver : Cancelable? = nil
   var headingUpdatesEnabled: Bool = true
@@ -264,7 +369,11 @@ class RNMBXLocationModule: RCTEventEmitter {
 
   @objc
   func setMinDisplacement(_ minDisplacement: CLLocationDistance) {
-    if let appleLocationProvider = _locationProvider as? AppleLocationProvider {
+    if let locationProvider = _locationProvider as? RNMBXPausableLocationProvider {
+      var newOptions = locationProvider.options
+      newOptions.distanceFilter = minDisplacement
+      if minDisplacement >= 0.0 { locationProvider.options = newOptions }
+    } else if let appleLocationProvider = _locationProvider as? AppleLocationProvider {
       var newOptions = appleLocationProvider.options
       newOptions.distanceFilter = minDisplacement
       if minDisplacement >= 0.0 { appleLocationProvider.options = newOptions }
@@ -296,6 +405,18 @@ class RNMBXLocationModule: RCTEventEmitter {
       throttler.waitBetweenEvents = throttleValue
     } else {
       throttler.waitBetweenEvents = nil
+    }
+  }
+
+  @objc func pauseUpdates() {
+    if let locationProvider = _locationProvider as? RNMBXPausableLocationProvider {
+      locationProvider.pauseUpdates()
+    }
+  }
+
+  @objc func resumeUpdates(_ clearAll: Bool) {
+    if let locationProvider = _locationProvider as? RNMBXPausableLocationProvider {
+      locationProvider.resumeUpdates(clearAll: clearAll)
     }
   }
 

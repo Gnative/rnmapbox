@@ -188,6 +188,16 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
 
         return false
     }
+
+    @ReactMethod
+    override fun pauseUpdates() {
+        locationManager?.pauseUpdates()
+    }
+
+    @ReactMethod
+    override fun resumeUpdates(clearAll: Boolean) {
+        locationManager?.resumeUpdates(clearAll)
+    }
     // endregion
 
 

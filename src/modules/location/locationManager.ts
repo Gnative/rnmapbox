@@ -35,6 +35,13 @@ export interface Location {
   timestamp?: number;
 }
 
+export interface MapUpdatesPauseState {
+  pauseCount: number;
+  isPaused: boolean;
+  unnamedPauseCount: number;
+  origins: string[];
+}
+
 /**
  * Coorinates sent by locationManager
  */
@@ -90,6 +97,10 @@ export class LocationManager {
   subscription: EmitterSubscription | EventSubscription | null;
   _appStateListener: NativeEventSubscription;
   _minDisplacement?: number;
+  _mapUpdatesPauseCount: number;
+  _mapUpdatesPauseOrigins: Set<string>;
+  _mapUpdatesPauseListeners: ((state: MapUpdatesPauseState) => void)[];
+  _locationUpdateListeners: ((location: Location) => void)[];
 
   constructor() {
     this._listeners = [];
@@ -98,6 +109,10 @@ export class LocationManager {
     this._requestsAlwaysUse = false;
     this._onUpdate = this._onUpdate.bind(this);
     this.subscription = null;
+    this._mapUpdatesPauseCount = 0;
+    this._mapUpdatesPauseOrigins = new Set();
+    this._mapUpdatesPauseListeners = [];
+    this._locationUpdateListeners = [];
 
     this._appStateListener = AppState.addEventListener(
       'change',
@@ -228,6 +243,7 @@ export class LocationManager {
     this._lastKnownLocation = location;
 
     this._listeners.forEach((l) => l(location));
+    this._locationUpdateListeners.forEach((listener) => listener(location));
   }
 
   /**
@@ -249,6 +265,121 @@ export class LocationManager {
    */
   setLocationEventThrottle(throttleValue: number) {
     MapboxLocationManager.setLocationEventThrottle(throttleValue);
+  }
+
+  addLocationUpdateListener(
+    listener: (location: Location) => void
+  ) {
+    if (!this._locationUpdateListeners.includes(listener)) {
+      this._locationUpdateListeners.push(listener);
+    }
+
+    return {
+      remove: () => this.removeLocationUpdateListener(listener),
+    };
+  }
+
+  removeLocationUpdateListener(
+    listener: (location: Location) => void
+  ) {
+    this._locationUpdateListeners = this._locationUpdateListeners.filter(
+      (l) => l !== listener
+    );
+  }
+
+  getMapUpdatesPauseState() {
+    return {
+      pauseCount: this._getMapUpdatesPauseCount(),
+      isPaused: this._getMapUpdatesPauseCount() > 0,
+      unnamedPauseCount: this._mapUpdatesPauseCount,
+      origins: Array.from(this._mapUpdatesPauseOrigins),
+    };
+  }
+
+  addMapUpdatesPauseListener(
+    listener: (state: MapUpdatesPauseState) => void
+  ) {
+    if (!this._mapUpdatesPauseListeners.includes(listener)) {
+      this._mapUpdatesPauseListeners.push(listener);
+    }
+
+    listener(this.getMapUpdatesPauseState());
+
+    return {
+      remove: () => this.removeMapUpdatesPauseListener(listener),
+    };
+  }
+
+  removeMapUpdatesPauseListener(
+    listener: (state: MapUpdatesPauseState) => void
+  ) {
+    this._mapUpdatesPauseListeners = this._mapUpdatesPauseListeners.filter(
+      (l) => l !== listener
+    );
+  }
+
+  _notifyMapUpdatesPauseListeners() {
+    const state = this.getMapUpdatesPauseState();
+    this._mapUpdatesPauseListeners.forEach((listener) => listener(state));
+  }
+
+  _getMapUpdatesPauseCount() {
+    return this._mapUpdatesPauseCount + this._mapUpdatesPauseOrigins.size;
+  }
+
+  pauseUpdates(origin?: string) {
+    const wasPaused = this._getMapUpdatesPauseCount() > 0;
+    let didChange = false;
+
+    if (origin) {
+      if (!this._mapUpdatesPauseOrigins.has(origin)) {
+        this._mapUpdatesPauseOrigins.add(origin);
+        didChange = true;
+      }
+    } else {
+      this._mapUpdatesPauseCount += 1;
+      didChange = true;
+    }
+
+    if (!didChange) {
+      return;
+    }
+
+    if (!wasPaused) {
+      MapboxLocationManager.pauseUpdates();
+    }
+
+    this._notifyMapUpdatesPauseListeners();
+  }
+
+  resumeUpdates(clearAllOrOrigin: boolean | string = false) {
+    const wasPaused = this._getMapUpdatesPauseCount() > 0;
+    let didChange = false;
+
+    if (clearAllOrOrigin === true) {
+      this._mapUpdatesPauseCount = 0;
+      this._mapUpdatesPauseOrigins.clear();
+      didChange = wasPaused;
+    } else if (typeof clearAllOrOrigin === 'string') {
+      didChange = this._mapUpdatesPauseOrigins.delete(clearAllOrOrigin);
+    } else {
+      if (this._mapUpdatesPauseCount === 0) {
+        return;
+      }
+
+      this._mapUpdatesPauseCount -= 1;
+      didChange = true;
+    }
+
+    if (!didChange) {
+      return;
+    }
+
+    if (wasPaused && this._getMapUpdatesPauseCount() === 0) {
+      MapboxLocationManager.resumeUpdates(clearAllOrOrigin === true);
+    }
+
+    this._notifyMapUpdatesPauseListeners();
   }
 }
 
