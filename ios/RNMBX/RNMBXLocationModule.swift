@@ -133,7 +133,7 @@ class RNMBXPausableLocationProvider: LocationProvider & HeadingProvider, Locatio
   private var observers: NSHashTable<AnyObject> = .weakObjects()
   private var headingObservers: NSHashTable<AnyObject> = .weakObjects()
   private var latestLocation: Location? = nil
-  private var pauseCount: Int = 0
+  private var isPaused: Bool = false
   private var isObservingLocation: Bool = false
   private var isObservingHeading: Bool = false
 
@@ -147,12 +147,11 @@ class RNMBXPausableLocationProvider: LocationProvider & HeadingProvider, Locatio
   }
 
   func pauseUpdates() {
-    pauseCount += 1
+    isPaused = true
   }
 
   func resumeUpdates(clearAll: Bool) {
-    pauseCount = clearAll ? 0 : max(0, pauseCount - 1)
-    guard pauseCount == 0 else { return }
+    isPaused = false
 
     if let latestLocation = latestLocation {
       notifyLocationObservers(locations: [latestLocation])
@@ -209,24 +208,40 @@ class RNMBXPausableLocationProvider: LocationProvider & HeadingProvider, Locatio
 
   func onLocationUpdateReceived(for locations: [Location]) {
     latestLocation = locations.last
-    guard pauseCount == 0 else { return }
+    guard !isPaused else { return }
     notifyLocationObservers(locations: locations)
   }
 
   func onHeadingUpdate(_ heading: MapboxMaps.Heading) {
-    guard pauseCount == 0 else { return }
+    guard !isPaused else { return }
     notifyHeadingObservers(heading: heading)
   }
 
   private func notifyLocationObservers(locations: [Location]) {
-    for observer in observers.allObjects {
-      (observer as? LocationObserver)?.onLocationUpdateReceived(for: locations)
+    let notify = {
+      for observer in self.observers.allObjects {
+        (observer as? LocationObserver)?.onLocationUpdateReceived(for: locations)
+      }
+    }
+
+    if Thread.isMainThread {
+      notify()
+    } else {
+      DispatchQueue.main.async(execute: notify)
     }
   }
 
   private func notifyHeadingObservers(heading: Heading) {
-    for observer in headingObservers.allObjects {
-      (observer as? HeadingObserver)?.onHeadingUpdate(heading)
+    let notify = {
+      for observer in self.headingObservers.allObjects {
+        (observer as? HeadingObserver)?.onHeadingUpdate(heading)
+      }
+    }
+
+    if Thread.isMainThread {
+      notify()
+    } else {
+      DispatchQueue.main.async(execute: notify)
     }
   }
 }
