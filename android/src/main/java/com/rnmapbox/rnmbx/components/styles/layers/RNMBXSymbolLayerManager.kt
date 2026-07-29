@@ -40,12 +40,12 @@ class RNMBXSymbolLayerManager : ViewGroupManager<RNMBXSymbolLayer>(),
 
     @ReactProp(name = "aboveLayerID")
     override fun setAboveLayerID(layer: RNMBXSymbolLayer, aboveLayerID: Dynamic) {
-        layer.setAboveLayerID(aboveLayerID.asString())
+        layer.setAboveLayerID(if (aboveLayerID.isNull) null else aboveLayerID.asString())
     }
 
     @ReactProp(name = "belowLayerID")
     override fun setBelowLayerID(layer: RNMBXSymbolLayer, belowLayerID: Dynamic) {
-        layer.setBelowLayerID(belowLayerID.asString())
+        layer.setBelowLayerID(if (belowLayerID.isNull) null else belowLayerID.asString())
     }
 
     @ReactProp(name = "layerIndex")
