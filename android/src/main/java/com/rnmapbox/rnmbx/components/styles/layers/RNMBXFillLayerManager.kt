@@ -40,12 +40,12 @@ class RNMBXFillLayerManager : ViewGroupManager<RNMBXFillLayer>(),
 
     @ReactProp(name = "aboveLayerID")
     override fun setAboveLayerID(layer: RNMBXFillLayer, aboveLayerID: Dynamic) {
-        layer.setAboveLayerID(aboveLayerID.asString())
+        layer.setAboveLayerID(if (aboveLayerID.isNull) null else aboveLayerID.asString())
     }
 
     @ReactProp(name = "belowLayerID")
     override fun setBelowLayerID(layer: RNMBXFillLayer, belowLayerID: Dynamic) {
-        layer.setBelowLayerID(belowLayerID.asString())
+        layer.setBelowLayerID(if (belowLayerID.isNull) null else belowLayerID.asString())
     }
 
     @ReactProp(name = "layerIndex")
