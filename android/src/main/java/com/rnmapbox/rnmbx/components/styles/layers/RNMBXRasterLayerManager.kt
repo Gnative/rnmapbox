@@ -40,12 +40,12 @@ class RNMBXRasterLayerManager : ViewGroupManager<RNMBXRasterLayer>(),
 
     @ReactProp(name = "aboveLayerID")
     override fun setAboveLayerID(layer: RNMBXRasterLayer, aboveLayerID: Dynamic) {
-        layer.setAboveLayerID(aboveLayerID.asString())
+        layer.setAboveLayerID(if (aboveLayerID.isNull) null else aboveLayerID.asString())
     }
 
     @ReactProp(name = "belowLayerID")
     override fun setBelowLayerID(layer: RNMBXRasterLayer, belowLayerID: Dynamic) {
-        layer.setBelowLayerID(belowLayerID.asString())
+        layer.setBelowLayerID(if (belowLayerID.isNull) null else belowLayerID.asString())
     }
 
     @ReactProp(name = "layerIndex")
