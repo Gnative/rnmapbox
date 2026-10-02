@@ -148,5 +148,3 @@ Sets the maximum number of Mapbox-hosted tiles that may be downloaded and stored
 Mapbox.offlineManagerLegacy.setTileCountLimit(1000);
 ```
 
-
-

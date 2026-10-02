@@ -190,6 +190,7 @@ NativeModules.RNMBXViewportModule = {
 
 NativeModules.RNMBXCameraModule = {
   updateCameraStop: jest.fn(),
+  updateCameraFollowConfig: jest.fn(),
 };
 
 NativeModules.RNMBXTileStoreModule = {

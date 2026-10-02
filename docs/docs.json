@@ -657,11 +657,11 @@
     "methods": [
       {
         "name": "setCamera",
-        "docblock": "Sets any camera properties, with default fallbacks if unspecified.\n\n@example\ncamera.current?.setCamera({\n  centerCoordinate: [lon, lat],\n});\n\n@param {CameraStop | CameraStops} config",
+        "docblock": "Sets camera position and follow properties, with default fallbacks if unspecified.\n\n@example\ncamera.current?.setCamera({\n  centerCoordinate: [lon, lat],\n});\n\n@param {CameraConfig | CameraStops} config",
         "modifiers": [],
         "params": [],
         "returns": null,
-        "description": "Sets any camera properties, with default fallbacks if unspecified.",
+        "description": "Sets camera position and follow properties, with default fallbacks if unspecified.",
         "examples": [
           "\ncamera.current?.setCamera({\n  centerCoordinate: [lon, lat],\n});\n\n"
         ]

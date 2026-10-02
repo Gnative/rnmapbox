@@ -6,6 +6,8 @@ export {
   type CameraPadding,
   type CameraAnimationMode,
   type CameraBounds,
+  type CameraConfig,
+  type CameraFollowConfig,
   type CameraStop,
 } from './components/Camera';
 export { Atmosphere } from './components/Atmosphere';

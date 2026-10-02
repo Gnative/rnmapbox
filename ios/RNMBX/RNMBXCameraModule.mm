@@ -50,6 +50,17 @@ RCT_EXPORT_METHOD(updateCameraStop:(nonnull NSNumber *)viewRef
     } reject:reject methodName:@"updateCameraStop"];
 }
 
+RCT_EXPORT_METHOD(updateCameraFollowConfig:(nonnull NSNumber *)viewRef
+                  config:(NSDictionary *)config
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
+{
+    [self withCamera:viewRef block:^(RNMBXCamera *view) {
+        [view updateCameraFollowConfig:config];
+        resolve(@true);
+    } reject:reject methodName:@"updateCameraFollowConfig"];
+}
+
 RCT_EXPORT_METHOD(moveBy:(nonnull NSNumber *)viewRef
                   x:(double)x
                   y:(double)y
