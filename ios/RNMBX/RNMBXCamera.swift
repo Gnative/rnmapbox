@@ -223,6 +223,9 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
   var cameraAnimator: BasicCameraAnimator?
   let cameraUpdateQueue = CameraUpdateQueue()
   private var isUpdatingFollowConfig = false
+  private var isFollowTransitionActive = false
+  private var shouldStopFollowingAfterTransition = false
+  private var deferFollowUserLocationStop = false
 
   // MARK: React properties
 
@@ -324,6 +327,9 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
     if let value = config["followPadding"] {
       followPadding = value is NSNull ? nil : value as? NSDictionary
     }
+    if let value = config["deferFollowUserLocationStop"] as? NSNumber {
+      deferFollowUserLocationStop = value.boolValue
+    }
     if let value = config["followUserLocation"] as? NSNumber {
       followUserLocation = value.boolValue
     }
@@ -367,6 +373,12 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
   }
 
   func _disableUserTracking(_ map: MapView) {
+    if deferFollowUserLocationStop && isFollowTransitionActive {
+      shouldStopFollowingAfterTransition = true
+      return
+    }
+
+    shouldStopFollowingAfterTransition = false
     map.viewport.idle()
   }
 
@@ -496,11 +508,19 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
         )
         followOptions.padding = edgeInsets
       }
-      
+
       let followState = mapView.viewport.makeFollowPuckViewportState(options: followOptions)
-      
+
       map.cameraWillMoveMap()
-      mapView.viewport.transition(to: followState)
+      isFollowTransitionActive = true
+      mapView.viewport.transition(to: followState) { [weak self, weak mapView] _ in
+        guard let self = self, let mapView = mapView else { return }
+        self.isFollowTransitionActive = false
+        if self.shouldStopFollowingAfterTransition {
+          self.shouldStopFollowingAfterTransition = false
+          mapView.viewport.idle()
+        }
+      }
       mapView.viewport.addStatusObserver(self)
       mapView.mapboxMap.setCamera(to: _camera)
     }

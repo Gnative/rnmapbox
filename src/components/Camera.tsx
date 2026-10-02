@@ -177,6 +177,8 @@ export type CameraFollowConfig = {
   followHeading?: number;
   /** The padding used to position the user location when following. */
   followPadding?: Partial<CameraPadding>;
+  /** Lets an active follow transition finish before stopping user follow. */
+  deferFollowUserLocationStop?: boolean;
 };
 
 /** Camera properties that can be changed with the imperative `setCamera` method. */
@@ -490,6 +492,9 @@ export const Camera = memo(
             ...(config.followPadding !== undefined && {
               followPadding: config.followPadding,
             }),
+            ...(config.deferFollowUserLocationStop !== undefined && {
+              deferFollowUserLocationStop: config.deferFollowUserLocationStop,
+            }),
           };
 
           if (Object.keys(followConfig).length > 0) {
@@ -497,7 +502,8 @@ export const Camera = memo(
           }
 
           const _nativeStop =
-            config.followUserLocation === true
+            config.followUserLocation === true ||
+            (config.followUserLocation === false && config.deferFollowUserLocationStop === true)
               ? null
               : buildNativeStop(config, config.followUserLocation === false);
           if (_nativeStop && Object.keys(_nativeStop).length > 0) {

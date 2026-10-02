@@ -32,6 +32,7 @@ interface NativeCameraFollowConfig {
   followPitch?: number;
   followHeading?: number;
   followPadding?: Object;
+  deferFollowUserLocationStop?: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
