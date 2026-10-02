@@ -74,6 +74,7 @@ describe('Camera', () => {
         followUserMode: UserTrackingMode.FollowWithCourse,
         followZoomLevel: 15,
         followPitch: 30,
+        followHeading: 90,
         followPadding: {
           paddingTop: 10,
           paddingBottom: 20,
@@ -88,6 +89,7 @@ describe('Camera', () => {
       followUserMode: UserTrackingMode.FollowWithCourse,
       followZoomLevel: 15,
       followPitch: 30,
+      followHeading: 90,
       followPadding: {
         paddingTop: 10,
         paddingBottom: 20,
@@ -100,7 +102,12 @@ describe('Camera', () => {
 
   test('can stop following and update the camera in one call', async () => {
     const camera = React.createRef();
-    render(<Camera ref={camera} followUserLocation />);
+    render(<Camera ref={camera} />);
+
+    await act(async () => {
+      camera.current.setCamera({ followUserLocation: true });
+    });
+    jest.clearAllMocks();
 
     await act(async () => {
       camera.current.setCamera({
@@ -123,6 +130,118 @@ describe('Camera', () => {
       NativeModules.RNMBXCameraModule.updateCameraStop.mock.calls[0];
     expect(JSON.parse(stop.centerCoordinate)).toStrictEqual(
       toFeature(coordinate1),
+    );
+  });
+
+  test('ignores declarative follow props and warns once per mount', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const followProps = {
+        followUserLocation: false,
+        followUserMode: UserTrackingMode.Follow,
+        followZoomLevel: 15,
+        followPitch: 30,
+        followHeading: 90,
+        followPadding: { paddingTop: 10 },
+        deferFollowUserLocationStop: true,
+      };
+      const result = render(
+        <Camera {...followProps} centerCoordinate={coordinate1} />,
+      );
+      const { props } = result.queryByTestId('Camera');
+      for (const name of Object.keys(followProps)) {
+        expect(props[name]).toBeUndefined();
+      }
+      expect(props.stop.centerCoordinate).toBeDefined();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(/Contours.*camera\.setCamera/),
+      );
+      result.rerender(<Camera {...followProps} followHeading={180} />);
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  test('camera commands respect imperative follow state', async () => {
+    const camera = React.createRef();
+    render(<Camera ref={camera} />);
+    await act(async () => {
+      camera.current.setCamera({ followUserLocation: true });
+      camera.current.setCamera({ centerCoordinate: coordinate1 });
+    });
+    expect(
+      NativeModules.RNMBXCameraModule.updateCameraStop,
+    ).not.toHaveBeenCalled();
+
+    await act(async () => {
+      camera.current.setCamera({ followUserLocation: false });
+      camera.current.setCamera({ centerCoordinate: coordinate1 });
+    });
+    expect(
+      NativeModules.RNMBXCameraModule.updateCameraStop,
+    ).toHaveBeenCalledTimes(1);
+  });
+
+  test('native follow cancellation allows subsequent camera commands', async () => {
+    const camera = React.createRef();
+    const result = render(<Camera ref={camera} />);
+    await act(async () => {
+      camera.current.setCamera({ followUserLocation: true });
+      result.queryByTestId('Camera').props.onUserTrackingModeChange({
+        nativeEvent: {
+          payloadRenamed: { followUserLocation: false, followUserMode: null },
+        },
+      });
+      camera.current.setCamera({ centerCoordinate: coordinate1 });
+    });
+    expect(
+      NativeModules.RNMBXCameraModule.updateCameraStop,
+    ).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([300, 0])(
+    'passes follow animation duration %i to native',
+    async (duration) => {
+      const camera = React.createRef();
+      render(<Camera ref={camera} />);
+      await act(async () => {
+        camera.current.setCamera({
+          followUserLocation: true,
+          followUserMode: UserTrackingMode.FollowWithHeading,
+          animationDuration: duration,
+        });
+      });
+      expect(
+        NativeModules.RNMBXCameraModule.updateCameraFollowConfig,
+      ).toHaveBeenCalledWith(expect.any(Number), {
+        followUserLocation: true,
+        followUserMode: UserTrackingMode.FollowWithHeading,
+        animationDuration: duration,
+      });
+      expect(
+        NativeModules.RNMBXCameraModule.updateCameraStop,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
+  test('position animation duration does not start a follow transition', async () => {
+    const camera = React.createRef();
+    render(<Camera ref={camera} />);
+    await act(async () => {
+      camera.current.setCamera({
+        centerCoordinate: coordinate1,
+        animationDuration: 300,
+      });
+    });
+    expect(
+      NativeModules.RNMBXCameraModule.updateCameraFollowConfig,
+    ).not.toHaveBeenCalled();
+    expect(
+      NativeModules.RNMBXCameraModule.updateCameraStop,
+    ).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.objectContaining({ duration: 300 }),
     );
   });
 });

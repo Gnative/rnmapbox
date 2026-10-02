@@ -26,6 +26,7 @@ type Stop =
   | NativeCameraStop;
 
 interface NativeCameraFollowConfig {
+  animationDuration?: number;
   followUserLocation?: boolean;
   followUserMode?: string;
   followZoomLevel?: number;

@@ -315,7 +315,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
     }
 
     isUpdatingFollowConfig = false
-    _updateCameraFromTrackingMode()
+    _updateCameraFromTrackingMode(animationDuration: (config["animationDuration"] as? NSNumber)?.doubleValue)
   }
 
   func _updateCameraFromJavascript() {
@@ -405,7 +405,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
     }
   }
 
-  func _updateCameraFromTrackingMode() {
+  func _updateCameraFromTrackingMode(animationDuration: Double? = nil) {
     withMapView { map in
       let userTrackingMode = UserTrackingMode(rawValue: self.followUserMode ?? UserTrackingMode.normal.rawValue)
       guard let userTrackingMode = userTrackingMode else {
@@ -434,7 +434,13 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
         followOptions.bearing = FollowPuckViewportStateBearing.course
         trackingModeChanged = true
       case .normal:
-        followOptions.bearing = nil
+        if let heading = self.followHeading?.doubleValue, heading >= 0 {
+          followOptions.bearing = .constant(heading)
+        } else if let heading = self.stop?["heading"] as? Double, heading >= 0 {
+          followOptions.bearing = .constant(heading)
+        } else {
+          followOptions.bearing = nil
+        }
         trackingModeChanged = true
       }
 
@@ -474,12 +480,22 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
       }
 
       let followState = map.viewport.makeFollowPuckViewportState(options: followOptions)
+      var transition: ViewportTransition?
+      if let duration = animationDuration, duration.isFinite && duration >= 0 {
+        if duration == 0 {
+          transition = map.viewport.makeImmediateViewportTransition()
+        } else {
+          transition = map.viewport.makeDefaultViewportTransition(
+            options: DefaultViewportTransitionOptions(maxDuration: duration / 1000)
+          )
+        }
+      }
 
       map.camera.cancelAnimations()
       self.followTransitionID += 1
       let transitionID = self.followTransitionID
       self.isFollowTransitionActive = true
-      map.viewport.transition(to: followState) { [weak self, weak map] _ in
+      map.viewport.transition(to: followState, transition: transition) { [weak self, weak map] _ in
         guard let self = self, let map = map else { return }
         guard transitionID == self.followTransitionID else { return }
         self.isFollowTransitionActive = false

@@ -10,6 +10,9 @@ Camera
 ```
 Controls the perspective from which the user sees the map.
 
+Contours disables declarative follow props and warns when they are supplied.
+Configure following with `camera.current?.setCamera({ followUserLocation: true, ... })`.
+
 To use imperative methods, pass in a ref object:
 
 ```tsx
@@ -106,7 +109,8 @@ The viewport padding in points.
 ```tsx
 number
 ```
-The duration the map takes to animate to a new configuration.
+The animation duration in milliseconds. For imperative follow updates, caps
+the initial follow transition duration; use 0 to follow immediately.
 
 
   
@@ -219,7 +223,8 @@ compatibility; the root `padding` prop should be used instead. */
   pitch: number; /* The pitch toward the horizon measured in degrees, with 0 degrees resulting in a top-down view for a two-dimensional map. */
   zoomLevel: number; /* The zoom level of the map. */
   padding: signature; /* The viewport padding in points. */
-  animationDuration: number; /* The duration the map takes to animate to a new configuration. */
+  animationDuration: number; /* The animation duration in milliseconds. For imperative follow updates, caps
+the initial follow transition duration; use 0 to follow immediately. */
   animationMode: 'flyTo' \| 'easeTo' \| 'linearTo' \| 'moveTo' \| 'none'; /* The easing or path the camera uses to animate to a new configuration. */
 }
 ```

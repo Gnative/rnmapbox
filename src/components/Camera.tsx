@@ -149,7 +149,8 @@ export type CameraStop = {
   zoomLevel?: number;
   /** The viewport padding in points. */
   padding?: CameraPadding;
-  /** The duration the map takes to animate to a new configuration. */
+  /** The animation duration in milliseconds. For imperative follow updates, caps
+   * the initial follow transition duration; use 0 to follow immediately. */
   animationDuration?: number;
   /** The easing or path the camera uses to animate to a new configuration. */
   animationMode?: CameraAnimationMode;
@@ -187,6 +188,10 @@ export type CameraMinMaxConfig = {
   };
 };
 
+/**
+ * Contours disables declarative follow properties. They are ignored with a warning;
+ * use `camera.setCamera(config)` to configure following instead.
+ */
 export interface CameraProps
   extends CameraStop,
     CameraFollowConfig,
@@ -243,6 +248,9 @@ export type CameraAnimationMode =
 /**
  * Controls the perspective from which the user sees the map.
  *
+ * Contours disables declarative follow props and warns when they are supplied.
+ * Configure following with `camera.current?.setCamera({ followUserLocation: true, ... })`.
+ *
  * To use imperative methods, pass in a ref object:
  *
  * ```tsx
@@ -274,16 +282,30 @@ export const Camera = memo(
         minZoomLevel,
         maxZoomLevel,
         maxBounds,
-        followUserLocation,
-        followUserMode,
-        followZoomLevel,
-        followPitch,
-        followHeading,
-        followPadding,
         defaultSettings,
         allowUpdates = true,
         onUserTrackingModeChange,
       } = props;
+
+      const imperativeFollowUserLocation = useRef(false);
+      const didWarnAboutFollowProps = useRef(false);
+      const hasDeclarativeFollowProps =
+        props.followUserLocation !== undefined ||
+        props.followUserMode !== undefined ||
+        props.followZoomLevel !== undefined ||
+        props.followPitch !== undefined ||
+        props.followHeading !== undefined ||
+        props.followPadding !== undefined ||
+        props.deferFollowUserLocationStop !== undefined;
+
+      useEffect(() => {
+        if (hasDeclarativeFollowProps && !didWarnAboutFollowProps.current) {
+          didWarnAboutFollowProps.current = true;
+          console.warn(
+            '[Camera] Contours has changed follow configuration: declarative follow props are disabled and ignored. Use camera.setCamera({ followUserLocation, followUserMode, followZoomLevel, followPitch, followHeading, followPadding, deferFollowUserLocationStop }) instead.',
+          );
+        }
+      }, [hasDeclarativeFollowProps]);
 
       const nativeCamera = useRef<typeof NativeCameraView>(
         null,
@@ -299,16 +321,13 @@ export const Camera = memo(
       }, [commands, nativeCamera.current]);
 
       const buildNativeStop = useCallback(
-        (
-          stop: CameraStop,
-          ignoreFollowUserLocation = false,
-        ): NativeCameraStop | null => {
+        (stop: CameraStop): NativeCameraStop | null => {
           stop = {
             ...stop,
             type: 'CameraStop',
           };
 
-          if (props.followUserLocation && !ignoreFollowUserLocation) {
+          if (imperativeFollowUserLocation.current) {
             return null;
           }
 
@@ -359,7 +378,7 @@ export const Camera = memo(
 
           return _nativeStop;
         },
-        [props.followUserLocation],
+        [],
       );
 
       // since codegen uses `payload` name in cpp code for creating payload for event,
@@ -374,6 +393,13 @@ export const Camera = memo(
             }
           >,
         ) => {
+          const payload =
+            event.nativeEvent.payload ??
+            // @ts-expect-error Fabric uses payloadRenamed to avoid a codegen name collision.
+            event.nativeEvent.payloadRenamed;
+          if (payload?.followUserLocation === false) {
+            imperativeFollowUserLocation.current = false;
+          }
           if (onUserTrackingModeChange) {
             if (!event.nativeEvent.payload) {
               // @ts-expect-error see the comment above
@@ -464,6 +490,9 @@ export const Camera = memo(
             ]);
           }
         } else if (config.type === 'CameraStop') {
+          if (config.followUserLocation !== undefined) {
+            imperativeFollowUserLocation.current = config.followUserLocation;
+          }
           const followConfig = {
             ...(config.followUserLocation !== undefined && {
               followUserLocation: config.followUserLocation,
@@ -489,7 +518,14 @@ export const Camera = memo(
           };
 
           if (Object.keys(followConfig).length > 0) {
-            commands.call<void>('updateCameraFollowConfig', [followConfig]);
+            commands.call<void>('updateCameraFollowConfig', [
+              {
+                ...followConfig,
+                ...(config.animationDuration !== undefined && {
+                  animationDuration: config.animationDuration,
+                }),
+              },
+            ]);
           }
 
           const _nativeStop =
@@ -497,7 +533,7 @@ export const Camera = memo(
             (config.followUserLocation === false &&
               config.deferFollowUserLocationStop === true)
               ? null
-              : buildNativeStop(config, config.followUserLocation === false);
+              : buildNativeStop(config);
           if (_nativeStop && Object.keys(_nativeStop).length > 0) {
             commands.call<void>('updateCameraStop', [
               _nativeStop as unknown as NativeArg,
@@ -723,12 +759,6 @@ export const Camera = memo(
           animationDuration={animationDuration}
           animationMode={animationMode}
           defaultStop={nativeDefaultStop}
-          followUserLocation={followUserLocation}
-          followUserMode={followUserMode}
-          followZoomLevel={followZoomLevel}
-          followPitch={followPitch}
-          followHeading={followHeading}
-          followPadding={followPadding}
           minZoomLevel={minZoomLevel}
           maxZoomLevel={maxZoomLevel}
           maxBounds={nativeMaxBounds}
