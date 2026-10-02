@@ -71,6 +71,7 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
     private var mDeferFollowUserLocationStop = false
     private var mFollowTransitionActive = false
     private var mStopFollowingAfterTransition = false
+    private var mFollowTransitionId = 0
 
     private var mZoomLevel = -1.0
     private var mMinZoomLevel : Double? = null
@@ -198,15 +199,18 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
                 config.getMap("followPadding")?.let(::followPaddingFromReadableMap)
             }
         }
-        if (config.hasKey("deferFollowUserLocationStop")) {
-            mDeferFollowUserLocationStop =
-                !config.isNull("deferFollowUserLocationStop") && config.getBoolean("deferFollowUserLocationStop")
-        }
+        mDeferFollowUserLocationStop =
+            config.hasKey("deferFollowUserLocationStop") &&
+                !config.isNull("deferFollowUserLocationStop") &&
+                config.getBoolean("deferFollowUserLocationStop")
         if (config.hasKey("followUserLocation")) {
             mFollowUserLocation = if (config.isNull("followUserLocation")) {
                 defaultFollowUserLocation
             } else {
                 config.getBoolean("followUserLocation")
+            }
+            if (mFollowUserLocation == true) {
+                mStopFollowingAfterTransition = false
             }
         }
 
@@ -507,6 +511,8 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
                 }
 
                 mStopFollowingAfterTransition = false
+                mFollowTransitionId += 1
+                mFollowTransitionActive = false
                 viewport.idle()
                 mLocationComponentManager?.setFollowLocation(false)
                 return;
@@ -567,8 +573,14 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
 
 
             val followState = viewport.makeFollowPuckViewportState(followOptions.build())
+            map.camera.cancelAllAnimators()
+            mFollowTransitionId += 1
+            val transitionId = mFollowTransitionId
             mFollowTransitionActive = true
             viewport.transitionTo(followState, null, CompletionListener {
+                if (transitionId != mFollowTransitionId) {
+                    return@CompletionListener
+                }
                 mFollowTransitionActive = false
                 if (mStopFollowingAfterTransition) {
                     mStopFollowingAfterTransition = false

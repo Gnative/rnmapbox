@@ -204,6 +204,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
   private var isFollowTransitionActive = false
   private var shouldStopFollowingAfterTransition = false
   private var deferFollowUserLocationStop = false
+  private var followTransitionID = 0
 
   // MARK: React properties
 
@@ -305,11 +306,12 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
     if let value = config["followPadding"] {
       followPadding = value is NSNull ? nil : value as? NSDictionary
     }
-    if let value = config["deferFollowUserLocationStop"] as? NSNumber {
-      deferFollowUserLocationStop = value.boolValue
-    }
+    deferFollowUserLocationStop = (config["deferFollowUserLocationStop"] as? NSNumber)?.boolValue ?? false
     if let value = config["followUserLocation"] as? NSNumber {
       followUserLocation = value.boolValue
+      if value.boolValue {
+        shouldStopFollowingAfterTransition = false
+      }
     }
 
     isUpdatingFollowConfig = false
@@ -356,6 +358,8 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
     }
 
     shouldStopFollowingAfterTransition = false
+    followTransitionID += 1
+    isFollowTransitionActive = false
     map.viewport.idle()
   }
 
@@ -441,8 +445,6 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
         }
       }
 
-      var _camera = CameraOptions()
-
       if let zoom = self.followZoomLevel as? CGFloat {
         if (zoom >= 0.0) {
           followOptions.zoom = zoom
@@ -461,16 +463,6 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
         followOptions.pitch = nil
       }
 
-      if let followHeading = self.followHeading as? CGFloat {
-        if (followHeading >= 0.0) {
-          _camera.bearing = followHeading
-        }
-      } else if let stopHeading = self.stop?["heading"] as? CGFloat {
-        if (stopHeading >= 0.0) {
-          _camera.bearing = stopHeading
-        }
-      }
-
       if let padding = self.followPadding {
         let edgeInsets = UIEdgeInsets(
           top: padding["paddingTop"] as? Double ?? 0,
@@ -483,9 +475,13 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
 
       let followState = map.viewport.makeFollowPuckViewportState(options: followOptions)
 
-      isFollowTransitionActive = true
+      map.camera.cancelAnimations()
+      self.followTransitionID += 1
+      let transitionID = self.followTransitionID
+      self.isFollowTransitionActive = true
       map.viewport.transition(to: followState) { [weak self, weak map] _ in
         guard let self = self, let map = map else { return }
+        guard transitionID == self.followTransitionID else { return }
         self.isFollowTransitionActive = false
         if self.shouldStopFollowingAfterTransition {
           self.shouldStopFollowingAfterTransition = false
@@ -493,7 +489,6 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
         }
       }
       map.viewport.addStatusObserver(self)
-      map.mapboxMap.setCamera(to: _camera)
     }
   }
 

@@ -494,7 +494,8 @@ export const Camera = memo(
 
           const _nativeStop =
             config.followUserLocation === true ||
-            (config.followUserLocation === false && config.deferFollowUserLocationStop === true)
+            (config.followUserLocation === false &&
+              config.deferFollowUserLocationStop === true)
               ? null
               : buildNativeStop(config, config.followUserLocation === false);
           if (_nativeStop && Object.keys(_nativeStop).length > 0) {
