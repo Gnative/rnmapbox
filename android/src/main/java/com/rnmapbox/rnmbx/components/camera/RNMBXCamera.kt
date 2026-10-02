@@ -21,6 +21,7 @@ import com.mapbox.maps.*
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.plugin.viewport.ViewportStatus
 import com.mapbox.maps.plugin.viewport.ViewportStatusObserver
+import com.mapbox.maps.plugin.viewport.CompletionListener
 import com.mapbox.maps.plugin.viewport.data.FollowPuckViewportStateBearing
 import com.mapbox.maps.plugin.viewport.data.FollowPuckViewportStateOptions
 import com.mapbox.maps.plugin.viewport.data.ViewportStatusChangeReason
@@ -67,6 +68,9 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
     private var mFollowPitch : Double? = null
     private var mFollowHeading : Double? = null
     private var mFollowPadding : EdgeInsets? = null
+    private var mDeferFollowUserLocationStop = false
+    private var mFollowTransitionActive = false
+    private var mStopFollowingAfterTransition = false
 
     private var mZoomLevel = -1.0
     private var mMinZoomLevel : Double? = null
@@ -193,6 +197,10 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
             } else {
                 config.getMap("followPadding")?.let(::followPaddingFromReadableMap)
             }
+        }
+        if (config.hasKey("deferFollowUserLocationStop")) {
+            mDeferFollowUserLocationStop =
+                !config.isNull("deferFollowUserLocationStop") && config.getBoolean("deferFollowUserLocationStop")
         }
         if (config.hasKey("followUserLocation")) {
             mFollowUserLocation = if (config.isNull("followUserLocation")) {
@@ -493,6 +501,12 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
             }
 
             if (mFollowUserLocation == false) {
+                if (mDeferFollowUserLocationStop && mFollowTransitionActive) {
+                    mStopFollowingAfterTransition = true
+                    return;
+                }
+
+                mStopFollowingAfterTransition = false
                 viewport.idle()
                 mLocationComponentManager?.setFollowLocation(false)
                 return;
@@ -553,7 +567,14 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
 
 
             val followState = viewport.makeFollowPuckViewportState(followOptions.build())
-            viewport.transitionTo(followState)
+            mFollowTransitionActive = true
+            viewport.transitionTo(followState, null, CompletionListener {
+                mFollowTransitionActive = false
+                if (mStopFollowingAfterTransition) {
+                    mStopFollowingAfterTransition = false
+                    viewport.idle()
+                }
+            })
         }
         mapboxMap?.let {
             it.getStyle()?.let {

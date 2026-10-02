@@ -201,6 +201,9 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
   var cameraAnimator: BasicCameraAnimator?
   let cameraUpdateQueue = CameraUpdateQueue()
   private var isUpdatingFollowConfig = false
+  private var isFollowTransitionActive = false
+  private var shouldStopFollowingAfterTransition = false
+  private var deferFollowUserLocationStop = false
 
   // MARK: React properties
 
@@ -302,6 +305,9 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
     if let value = config["followPadding"] {
       followPadding = value is NSNull ? nil : value as? NSDictionary
     }
+    if let value = config["deferFollowUserLocationStop"] as? NSNumber {
+      deferFollowUserLocationStop = value.boolValue
+    }
     if let value = config["followUserLocation"] as? NSNumber {
       followUserLocation = value.boolValue
     }
@@ -344,6 +350,12 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
   }
 
   func _disableUserTracking(_ map: MapView) {
+    if deferFollowUserLocationStop && isFollowTransitionActive {
+      shouldStopFollowingAfterTransition = true
+      return
+    }
+
+    shouldStopFollowingAfterTransition = false
     map.viewport.idle()
   }
 
@@ -471,7 +483,15 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
 
       let followState = map.viewport.makeFollowPuckViewportState(options: followOptions)
 
-      map.viewport.transition(to: followState)
+      isFollowTransitionActive = true
+      map.viewport.transition(to: followState) { [weak self, weak map] _ in
+        guard let self = self, let map = map else { return }
+        self.isFollowTransitionActive = false
+        if self.shouldStopFollowingAfterTransition {
+          self.shouldStopFollowingAfterTransition = false
+          map.viewport.idle()
+        }
+      }
       map.viewport.addStatusObserver(self)
       map.mapboxMap.setCamera(to: _camera)
     }
