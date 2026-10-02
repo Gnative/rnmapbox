@@ -7,6 +7,7 @@ import com.facebook.react.bridge.Dynamic
 import com.facebook.react.bridge.ReadableMap
 import com.mapbox.maps.plugin.gestures.gestures
 import com.rnmapbox.rnmbx.location.LocationManager.Companion.getInstance
+import com.mapbox.maps.plugin.animation.camera
 import com.mapbox.maps.plugin.animation.flyTo
 import com.rnmapbox.rnmbx.components.AbstractMapFeature
 import com.rnmapbox.rnmbx.components.mapview.RNMBXMapView
@@ -22,6 +23,7 @@ import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.plugin.viewport.ViewportStatus
 import com.mapbox.maps.plugin.viewport.ViewportStatusObserver
 import com.mapbox.maps.plugin.viewport.CompletionListener
+import com.mapbox.maps.plugin.viewport.data.DefaultViewportTransitionOptions
 import com.mapbox.maps.plugin.viewport.data.FollowPuckViewportStateBearing
 import com.mapbox.maps.plugin.viewport.data.FollowPuckViewportStateOptions
 import com.mapbox.maps.plugin.viewport.data.ViewportStatusChangeReason
@@ -214,7 +216,12 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
             }
         }
 
-        _updateViewportState()
+        val duration = if (config.hasKey("animationDuration") && !config.isNull("animationDuration")) {
+            config.getDouble("animationDuration")
+        } else {
+            null
+        }
+        _updateViewportState(duration)
     }
 
     fun setMaxBounds(bounds: LatLngBounds?) {
@@ -496,7 +503,7 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
         }
     }
 
-    fun _updateViewportState() {
+    fun _updateViewportState(animationDuration: Double? = null) {
         mMapView?.let {
             val map = it.mapView
             val viewport = map.viewport;
@@ -520,12 +527,6 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
             }
 
             mLocationComponentManager?.setFollowLocation(true)
-            mLocationManager?.let {
-                val provider = map.location.getLocationProvider()
-                if (provider != null) {
-                    it.provider = provider
-                }
-            }
 
             val location = map.location2
             val followOptions = FollowPuckViewportStateOptions.Builder()
@@ -556,6 +557,8 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
                 }
             }
 
+            mLocationComponentManager?.updateBearingSettings()
+
             when(val it=mFollowZoomLevel) {
                 null -> followOptions.zoom(cameraState.zoom)
                 else -> followOptions.zoom(it)
@@ -574,11 +577,20 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
 
             val followState = viewport.makeFollowPuckViewportState(followOptions.build())
             it.cameraWillMoveMap()
+            val transition = animationDuration?.takeIf { it.isFinite() && it >= 0 }?.let { duration ->
+                if (duration == 0.0) {
+                    viewport.makeImmediateViewportTransition()
+                } else {
+                    viewport.makeDefaultViewportTransition(
+                        DefaultViewportTransitionOptions.Builder().maxDurationMs(duration.toLong()).build()
+                    )
+                }
+            }
             map.camera.cancelAllAnimators()
             mFollowTransitionId += 1
             val transitionId = mFollowTransitionId
             mFollowTransitionActive = true
-            viewport.transitionTo(followState, null, CompletionListener {
+            viewport.transitionTo(followState, transition, CompletionListener {
                 if (transitionId != mFollowTransitionId) {
                     return@CompletionListener
                 }
@@ -586,6 +598,7 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
                 if (mStopFollowingAfterTransition) {
                     mStopFollowingAfterTransition = false
                     viewport.idle()
+                    mLocationComponentManager?.setFollowLocation(false)
                 }
             })
         }

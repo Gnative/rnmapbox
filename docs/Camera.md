@@ -10,6 +10,9 @@ Camera
 ```
 Controls the perspective from which the user sees the map.
 
+Contours disables declarative follow props and warns when they are supplied.
+Configure following with `camera.current?.setCamera({ followUserLocation: true, ... })`.
+
 To use imperative methods, pass in a ref object:
 
 ```tsx
@@ -90,12 +93,7 @@ The zoom level of the map.
 ### padding
 
 ```tsx
-type Padding = {
-  paddingLeft: number; /* Left padding in points */
-  paddingRight: number; /* Right padding in points */
-  paddingTop: number; /* Top padding in points */
-  paddingBottom: number; /* Bottom padding in points */
-}
+Partial
 ```
 The viewport padding in points. An omitted edge keeps its current padding.
 
@@ -106,7 +104,8 @@ The viewport padding in points. An omitted edge keeps its current padding.
 ```tsx
 number
 ```
-The duration the map takes to animate to a new configuration.
+The animation duration in milliseconds. For imperative follow updates, caps
+the initial follow transition duration; use 0 to follow immediately.
 
 
   
@@ -177,6 +176,15 @@ The padding used to position the user location when following.
 
 
   
+### deferFollowUserLocationStop
+
+```tsx
+boolean
+```
+Lets an active follow transition finish before stopping user follow.
+
+
+  
 ### minZoomLevel
 
 ```tsx
@@ -218,8 +226,9 @@ compatibility; the root `padding` prop should be used instead. */
   heading: number; /* Heading (bearing, orientation) of the map, measured in degrees clockwise from true north. */
   pitch: number; /* The pitch toward the horizon measured in degrees, with 0 degrees resulting in a top-down view for a two-dimensional map. */
   zoomLevel: number; /* The zoom level of the map. */
-  padding: signature; /* The viewport padding in points. An omitted edge keeps its current padding. */
-  animationDuration: number; /* The duration the map takes to animate to a new configuration. */
+  padding: Partial; /* The viewport padding in points. An omitted edge keeps its current padding. */
+  animationDuration: number; /* The animation duration in milliseconds. For imperative follow updates, caps
+the initial follow transition duration; use 0 to follow immediately. */
   animationMode: 'flyTo' \| 'easeTo' \| 'linearTo' \| 'moveTo' \| 'none'; /* The easing or path the camera uses to animate to a new configuration. */
 }
 ```

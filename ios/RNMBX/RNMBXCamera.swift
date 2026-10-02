@@ -88,6 +88,7 @@ struct CameraUpdateItem {
       }
 
       map.withMapView { mapView in
+        // Off-window maps cannot animate; apply the target immediately.
         if mapView.window == nil {
           mapView.mapboxMap.setCamera(to: camera)
           return
@@ -337,7 +338,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
     }
 
     isUpdatingFollowConfig = false
-    _updateCameraFromTrackingMode()
+    _updateCameraFromTrackingMode(animationDuration: (config["animationDuration"] as? NSNumber)?.doubleValue)
   }
 
   func _updateCameraFromJavascript() {
@@ -433,7 +434,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
     }
   }
 
-  func _updateCameraFromTrackingMode() {
+  func _updateCameraFromTrackingMode(animationDuration: Double? = nil) {
     withMap { map, mapView in
       let userTrackingMode = UserTrackingMode(rawValue: self.followUserMode ?? UserTrackingMode.normal.rawValue)
       guard let userTrackingMode = userTrackingMode else {
@@ -462,7 +463,13 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
         followOptions.bearing = FollowPuckViewportStateBearing.course
         trackingModeChanged = true
       case .normal:
-        followOptions.bearing = nil
+        if let heading = self.followHeading?.doubleValue, heading >= 0 {
+          followOptions.bearing = .constant(heading)
+        } else if let heading = self.stop?["heading"] as? Double, heading >= 0 {
+          followOptions.bearing = .constant(heading)
+        } else {
+          followOptions.bearing = nil
+        }
         trackingModeChanged = true
       }
 
@@ -502,13 +509,23 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
       }
 
       let followState = mapView.viewport.makeFollowPuckViewportState(options: followOptions)
+      var transition: ViewportTransition?
+      if let duration = animationDuration, duration.isFinite && duration >= 0 {
+        if duration == 0 {
+          transition = mapView.viewport.makeImmediateViewportTransition()
+        } else {
+          transition = mapView.viewport.makeDefaultViewportTransition(
+            options: DefaultViewportTransitionOptions(maxDuration: duration / 1000)
+          )
+        }
+      }
 
       map.cameraWillMoveMap()
       mapView.camera.cancelAnimations()
       self.followTransitionID += 1
       let transitionID = self.followTransitionID
       self.isFollowTransitionActive = true
-      mapView.viewport.transition(to: followState) { [weak self, weak mapView] _ in
+      mapView.viewport.transition(to: followState, transition: transition) { [weak self, weak mapView] _ in
         guard let self = self, let mapView = mapView else { return }
         guard transitionID == self.followTransitionID else { return }
         self.isFollowTransitionActive = false
@@ -540,7 +557,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
     if let h = stop["heading"] as? Double {
       heading = CLLocationDirection(h)
     }
-    
+
     func stopPadding(defaults: UIEdgeInsets) -> UIEdgeInsets {
       UIEdgeInsets(
         top: stop["paddingTop"] as? Double ?? defaults.top,
@@ -550,7 +567,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
       )
     }
     let padding = stopPadding(defaults: map?.mapView?.mapboxMap.cameraState.padding ?? .zero)
-    
+
     var camera: CameraOptions?
 
     if let feature = stop["centerCoordinate"] as? String {
@@ -736,7 +753,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
       let duration = animationDuration / 1000
 
       map.cameraWillMoveMap()
-        
+
       if (duration == 0.0) {
         mapView.mapboxMap.setCamera(to: cameraOptions)
         resolve(nil)

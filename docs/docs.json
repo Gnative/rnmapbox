@@ -652,7 +652,7 @@
     "name": "Callout"
   },
   "Camera": {
-    "description": "Controls the perspective from which the user sees the map.\n\nTo use imperative methods, pass in a ref object:\n\n```tsx\nconst camera = useRef&lt;Camera&gt;(null);\n\nuseEffect(() => {\n  camera.current?.setCamera({\n    centerCoordinate: [lon, lat],\n  });\n}, []);\n\nreturn (\n  <Camera ref={camera} />\n);\n```",
+    "description": "Controls the perspective from which the user sees the map.\n\nContours disables declarative follow props and warns when they are supplied.\nConfigure following with `camera.current?.setCamera({ followUserLocation: true, ... })`.\n\nTo use imperative methods, pass in a ref object:\n\n```tsx\nconst camera = useRef&lt;Camera&gt;(null);\n\nuseEffect(() => {\n  camera.current?.setCamera({\n    centerCoordinate: [lon, lat],\n  });\n}, []);\n\nreturn (\n  <Camera ref={camera} />\n);\n```",
     "displayName": "Camera",
     "methods": [
       {
@@ -834,7 +834,7 @@
         "required": false,
         "type": "number",
         "default": "none",
-        "description": "The duration the map takes to animate to a new configuration."
+        "description": "The animation duration in milliseconds. For imperative follow updates, caps\nthe initial follow transition duration; use 0 to follow immediately."
       },
       {
         "name": "animationMode",
@@ -984,7 +984,7 @@
               "required": false,
               "type": "number",
               "default": "none",
-              "description": "The duration the map takes to animate to a new configuration."
+              "description": "The animation duration in milliseconds. For imperative follow updates, caps\nthe initial follow transition duration; use 0 to follow immediately."
             },
             {
               "name": "animationMode",
