@@ -25,11 +25,24 @@ type Stop =
     }
   | NativeCameraStop;
 
+interface NativeCameraFollowConfig {
+  followUserLocation?: boolean;
+  followUserMode?: string;
+  followZoomLevel?: number;
+  followPitch?: number;
+  followHeading?: number;
+  followPadding?: Object;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type ObjectOr<_T> = Object;
 
 export interface Spec extends TurboModule {
   updateCameraStop(viewRef: ViewRef, stop: ObjectOr<Stop>): Promise<void>;
+  updateCameraFollowConfig(
+    viewRef: ViewRef,
+    config: ObjectOr<NativeCameraFollowConfig>,
+  ): Promise<void>;
   moveBy: (
     viewRef: ViewRef,
     x: number,

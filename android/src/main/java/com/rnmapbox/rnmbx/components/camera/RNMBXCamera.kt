@@ -159,17 +159,50 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
     }
 
     fun setFollowPadding(padding: ReadableMap) {
+        mFollowPadding = followPaddingFromReadableMap(padding)
+        _updateViewportState();
+    }
+
+    private fun followPaddingFromReadableMap(padding: ReadableMap): EdgeInsets {
         // scale padding by pixel ratio
         val metrics = context.resources.displayMetrics
-        val edgeInsets = EdgeInsets(
+        return EdgeInsets(
             if (padding.hasKey("paddingTop")) padding.getDouble("paddingTop") * metrics.density else 0.0,
             if (padding.hasKey("paddingLeft")) padding.getDouble("paddingLeft") * metrics.density else 0.0,
             if (padding.hasKey("paddingBottom")) padding.getDouble("paddingBottom") * metrics.density else 0.0,
             if (padding.hasKey("paddingRight")) padding.getDouble("paddingRight") * metrics.density else 0.0,
         )
+    }
 
-        mFollowPadding = edgeInsets
-        _updateViewportState();
+    fun updateCameraFollowConfig(config: ReadableMap) {
+        if (config.hasKey("followUserMode")) {
+            mFollowUserMode = if (config.isNull("followUserMode")) null else config.getString("followUserMode")
+        }
+        if (config.hasKey("followZoomLevel")) {
+            mFollowZoomLevel = if (config.isNull("followZoomLevel")) null else config.getDouble("followZoomLevel")
+        }
+        if (config.hasKey("followPitch")) {
+            mFollowPitch = if (config.isNull("followPitch")) null else config.getDouble("followPitch")
+        }
+        if (config.hasKey("followHeading")) {
+            mFollowHeading = if (config.isNull("followHeading")) null else config.getDouble("followHeading")
+        }
+        if (config.hasKey("followPadding")) {
+            mFollowPadding = if (config.isNull("followPadding")) {
+                null
+            } else {
+                config.getMap("followPadding")?.let(::followPaddingFromReadableMap)
+            }
+        }
+        if (config.hasKey("followUserLocation")) {
+            mFollowUserLocation = if (config.isNull("followUserLocation")) {
+                defaultFollowUserLocation
+            } else {
+                config.getBoolean("followUserLocation")
+            }
+        }
+
+        _updateViewportState()
     }
 
     fun setMaxBounds(bounds: LatLngBounds?) {

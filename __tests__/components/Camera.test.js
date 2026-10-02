@@ -1,7 +1,8 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { NativeModules } from 'react-native';
+import { act, render } from '@testing-library/react-native';
 
-import { Camera } from '../../src/components/Camera';
+import { Camera, UserTrackingMode } from '../../src/components/Camera';
 
 const coordinate1 = [-111.8678, 40.2866];
 
@@ -28,6 +29,10 @@ const toFeatureCollection = (bounds) => {
   };
 };
 describe('Camera', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('defaults are set', () => {
     const result = render(<Camera />);
     const { props } = result.queryByTestId('Camera');
@@ -56,5 +61,68 @@ describe('Camera', () => {
     const result = render(<Camera bounds={bounds1} animationMode={'moveTo'} />);
     const { props } = result.queryByTestId('Camera');
     expect(props.stop.mode).toEqual('Move');
+  });
+
+  test('imperatively updates follow configuration', async () => {
+    const camera = React.createRef();
+    render(<Camera ref={camera} />);
+
+    await act(async () => {
+      camera.current.setCamera({
+        centerCoordinate: coordinate1,
+        followUserLocation: true,
+        followUserMode: UserTrackingMode.FollowWithCourse,
+        followZoomLevel: 15,
+        followPitch: 30,
+        followPadding: {
+          paddingTop: 10,
+          paddingBottom: 20,
+        },
+      });
+    });
+
+    expect(
+      NativeModules.RNMBXCameraModule.updateCameraFollowConfig,
+    ).toHaveBeenCalledWith(expect.any(Number), {
+      followUserLocation: true,
+      followUserMode: UserTrackingMode.FollowWithCourse,
+      followZoomLevel: 15,
+      followPitch: 30,
+      followPadding: {
+        paddingTop: 10,
+        paddingBottom: 20,
+      },
+    });
+    expect(
+      NativeModules.RNMBXCameraModule.updateCameraStop,
+    ).not.toHaveBeenCalled();
+  });
+
+  test('can stop following and update the camera in one call', async () => {
+    const camera = React.createRef();
+    render(<Camera ref={camera} followUserLocation />);
+
+    await act(async () => {
+      camera.current.setCamera({
+        centerCoordinate: coordinate1,
+        followUserLocation: false,
+      });
+    });
+
+    expect(
+      NativeModules.RNMBXCameraModule.updateCameraFollowConfig,
+    ).toHaveBeenCalledWith(expect.any(Number), {
+      followUserLocation: false,
+    });
+    expect(
+      NativeModules.RNMBXCameraModule.updateCameraStop,
+    ).toHaveBeenCalledWith(expect.any(Number), {
+      centerCoordinate: expect.any(String),
+    });
+    const [, stop] =
+      NativeModules.RNMBXCameraModule.updateCameraStop.mock.calls[0];
+    expect(JSON.parse(stop.centerCoordinate)).toStrictEqual(
+      toFeature(coordinate1),
+    );
   });
 });

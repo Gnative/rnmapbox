@@ -57,6 +57,13 @@ class RNMBXCameraModule(context: ReactApplicationContext, val viewTagResolver: V
         }
     }
 
+    override fun updateCameraFollowConfig(viewRef: ViewRefTag?, config: ReadableMap, promise: Promise) {
+        withViewportOnUIThread(viewRef, promise) {
+            it.updateCameraFollowConfig(config)
+            promise.resolve(null)
+        }
+    }
+
     private fun getAnimationOptions(
         animationMode: Double,
         animationDuration: Double

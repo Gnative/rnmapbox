@@ -145,5 +145,3 @@ If locationManager should be running
 | ---- | :--: | :------: | :----------: |
 
 
-
-

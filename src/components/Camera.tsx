@@ -96,7 +96,7 @@ interface NativeCameraStop {
 }
 
 export interface CameraRef {
-  setCamera: (config: CameraStop | CameraStops) => void;
+  setCamera: (config: CameraConfig | CameraStops) => void;
   fitBounds: (
     ne: Position,
     sw: Position,
@@ -169,6 +169,9 @@ export type CameraFollowConfig = {
   /** The padding used to position the user location when following. */
   followPadding?: Partial<CameraPadding>;
 };
+
+/** Camera properties that can be changed with the imperative `setCamera` method. */
+export type CameraConfig = CameraStop & CameraFollowConfig;
 
 export type CameraMinMaxConfig = {
   /** The lowest allowed zoom level. */
@@ -459,8 +462,36 @@ export const Camera = memo(
             ]);
           }
         } else if (config.type === 'CameraStop') {
-          const _nativeStop = buildNativeStop(config);
-          if (_nativeStop) {
+          const followConfig = {
+            ...(config.followUserLocation !== undefined && {
+              followUserLocation: config.followUserLocation,
+            }),
+            ...(config.followUserMode !== undefined && {
+              followUserMode: config.followUserMode,
+            }),
+            ...(config.followZoomLevel !== undefined && {
+              followZoomLevel: config.followZoomLevel,
+            }),
+            ...(config.followPitch !== undefined && {
+              followPitch: config.followPitch,
+            }),
+            ...(config.followHeading !== undefined && {
+              followHeading: config.followHeading,
+            }),
+            ...(config.followPadding !== undefined && {
+              followPadding: config.followPadding,
+            }),
+          };
+
+          if (Object.keys(followConfig).length > 0) {
+            commands.call<void>('updateCameraFollowConfig', [followConfig]);
+          }
+
+          const _nativeStop =
+            config.followUserLocation === true
+              ? null
+              : buildNativeStop(config, config.followUserLocation === false);
+          if (_nativeStop && Object.keys(_nativeStop).length > 0) {
             commands.call<void>('updateCameraStop', [
               _nativeStop as unknown as NativeArg,
             ]);
@@ -595,14 +626,14 @@ export const Camera = memo(
 
       useImperativeHandle(ref, () => ({
         /**
-         * Sets any camera properties, with default fallbacks if unspecified.
+         * Sets camera position and follow properties, with default fallbacks if unspecified.
          *
          * @example
          * camera.current?.setCamera({
          *   centerCoordinate: [lon, lat],
          * });
          *
-         * @param {CameraStop | CameraStops} config
+         * @param {CameraConfig | CameraStops} config
          */
         setCamera,
         /**

@@ -200,6 +200,7 @@ open class RNMBXMapAndMapViewComponentBase : UIView, RNMBXMapAndMapViewComponent
 open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
   var cameraAnimator: BasicCameraAnimator?
   let cameraUpdateQueue = CameraUpdateQueue()
+  private var isUpdatingFollowConfig = false
 
   // MARK: React properties
 
@@ -211,37 +212,37 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
 
   @objc public var followUserLocation : Bool = false {
     didSet {
-      _updateCameraFromTrackingMode()
+      updateCameraFromTrackingModeIfNeeded()
     }
   }
 
   @objc public var followUserMode: String? {
     didSet {
-      _updateCameraFromTrackingMode()
+      updateCameraFromTrackingModeIfNeeded()
     }
   }
 
   @objc public var followZoomLevel: NSNumber? {
     didSet {
-      _updateCameraFromTrackingMode()
+      updateCameraFromTrackingModeIfNeeded()
     }
   }
 
   @objc public var followPitch: NSNumber? {
     didSet {
-      _updateCameraFromTrackingMode()
+      updateCameraFromTrackingModeIfNeeded()
     }
   }
 
   @objc public var followHeading: NSNumber? {
     didSet {
-      _updateCameraFromTrackingMode()
+      updateCameraFromTrackingModeIfNeeded()
     }
   }
 
   @objc public var followPadding: NSDictionary? {
     didSet {
-      _updateCameraFromTrackingMode()
+      updateCameraFromTrackingModeIfNeeded()
     }
   }
 
@@ -276,6 +277,38 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
   var maxBoundsFeature : FeatureCollection? = nil
 
   // MARK: Update methods
+
+  private func updateCameraFromTrackingModeIfNeeded() {
+    if !isUpdatingFollowConfig {
+      _updateCameraFromTrackingMode()
+    }
+  }
+
+  @objc public func updateCameraFollowConfig(_ config: [String: Any]) {
+    isUpdatingFollowConfig = true
+
+    if let value = config["followUserMode"] {
+      followUserMode = value is NSNull ? nil : value as? String
+    }
+    if let value = config["followZoomLevel"] {
+      followZoomLevel = value is NSNull ? nil : value as? NSNumber
+    }
+    if let value = config["followPitch"] {
+      followPitch = value is NSNull ? nil : value as? NSNumber
+    }
+    if let value = config["followHeading"] {
+      followHeading = value is NSNull ? nil : value as? NSNumber
+    }
+    if let value = config["followPadding"] {
+      followPadding = value is NSNull ? nil : value as? NSDictionary
+    }
+    if let value = config["followUserLocation"] as? NSNumber {
+      followUserLocation = value.boolValue
+    }
+
+    isUpdatingFollowConfig = false
+    _updateCameraFromTrackingMode()
+  }
 
   func _updateCameraFromJavascript() {
     guard !followUserLocation else {

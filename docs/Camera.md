@@ -266,7 +266,7 @@ Executes when user tracking mode changes.
 ## methods
 ### setCamera()
 
-Sets any camera properties, with default fallbacks if unspecified.
+Sets camera position and follow properties, with default fallbacks if unspecified.
 
 #### arguments
 | Name | Type | Required | Description  |
