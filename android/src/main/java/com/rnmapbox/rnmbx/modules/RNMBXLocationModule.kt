@@ -3,7 +3,6 @@ package com.rnmapbox.rnmbx.modules
 import com.facebook.react.bridge.*
 import com.rnmapbox.rnmbx.location.LocationManager
 import com.rnmapbox.rnmbx.location.HeadingLocationProvider
-import com.mapbox.maps.plugin.locationcomponent.DefaultLocationProvider
 import com.facebook.react.common.LifecycleState
 import com.facebook.react.module.annotations.ReactModule
 import com.rnmapbox.rnmbx.NativeRNMBXLocationModuleSpec
@@ -29,7 +28,7 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
     private var headingUpdatesEnabled = true
     private var hostResumed = reactContext.lifecycleState == LifecycleState.RESUMED
     private val headingProvider by lazy {
-        HeadingLocationProvider(DefaultLocationProvider(reactContext.applicationContext)) {
+        HeadingLocationProvider(reactContext.applicationContext) {
             mLastLocation?.let { location ->
                 sendLocationEvent(location, System.currentTimeMillis())
             }

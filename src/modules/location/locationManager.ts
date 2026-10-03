@@ -47,7 +47,7 @@ export interface MapUpdatesPauseState {
  */
 interface Coordinates {
   /**
-   * The compass heading (measured in degrees) supplied by the platform's Mapbox heading provider.
+   * The compass heading in degrees (magnetic north on Android), supplied by the platform's orientation sensors.
    * Heading is used to describe the direction the device is pointing to (the value of the compass).
    * Available when the provider has a compass reading; independent of movement course.
    */

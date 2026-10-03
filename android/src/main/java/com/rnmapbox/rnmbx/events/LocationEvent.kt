@@ -53,7 +53,7 @@ class LocationEvent(
             coords.putDouble("altitude", it)
         }
         coords.putDouble("accuracy", location.accuracy.toDouble())
-        // Compass heading comes from the Maps SDK's HEADING provider subscription.
+        // Compass heading comes from the device orientation sensors.
         // Common Location.bearing describes movement course and must remain separate.
         heading?.let { coords.putDouble("heading", it) }
         location.bearing?.let {

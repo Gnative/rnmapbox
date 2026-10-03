@@ -47,22 +47,24 @@ internal class PausableLocationProvider(
 
         override fun onLocationUpdated(vararg location: Point, options: (ValueAnimator.() -> Unit)?) {
             val latest = location.lastOrNull() ?: return
+            if (isPaused()) {
+                pendingLocation = latest
+                return
+            }
+            pendingLocation = null
             val previous = lastLocation
             val displacement = minDisplacement()
             if (previous != null && displacement > 0 &&
                 TurfMeasurement.distance(previous, latest, UNIT_METERS) < displacement) return
-            if (isPaused()) {
-                pendingLocation = latest
-            } else {
-                lastLocation = latest
-                target.onLocationUpdated(*location, options = options)
-            }
+            lastLocation = latest
+            target.onLocationUpdated(*location, options = options)
         }
 
         override fun onBearingUpdated(vararg bearing: Double, options: (ValueAnimator.() -> Unit)?) {
             if (isPaused()) {
                 pendingBearing = bearing.lastOrNull()
             } else {
+                pendingBearing = null
                 target.onBearingUpdated(*bearing, options = options)
             }
         }
@@ -71,6 +73,7 @@ internal class PausableLocationProvider(
             if (isPaused()) {
                 pendingAccuracy = radius.lastOrNull()
             } else {
+                pendingAccuracy = null
                 target.onHorizontalAccuracyRadiusUpdated(*radius, options = options)
             }
         }
@@ -83,8 +86,7 @@ internal class PausableLocationProvider(
             pendingBearing = null
             pendingAccuracy = null
             location?.let {
-                lastLocation = it
-                target.onLocationUpdated(it)
+                onLocationUpdated(it)
             }
             bearing?.let { target.onBearingUpdated(it) }
             accuracy?.let { target.onHorizontalAccuracyRadiusUpdated(it) }
