@@ -115,6 +115,7 @@ class RNMBXCustomLocationProvider(context: Context) : AbstractMapFeature(context
                 context
             )
         )
+        mMapView?.locationComponentManager?.updateBearingSettings()
         customLocationProvider = null
     }
     // endregion
