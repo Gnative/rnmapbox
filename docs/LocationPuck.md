@@ -20,9 +20,9 @@ Renders a puck on the map that shows the device's current location.
 ```
 Android render mode.
 
- - normal: just a circle
- - compass: triangle with heading
- - gps: large arrow
+ - normal: blue dot with a white border; adds a small arrow when `puckBearingEnabled` is true
+ - compass: blue dot with a white border and a small directional arrow
+ - gps: same appearance as compass; use `puckBearing` to select heading or course
 
 @deprecated use `puckBearing` for source and `bearingImage` for image
 @platform android

@@ -139,6 +139,7 @@ const UserLocationRenderMode = () => {
           }
           showsUserHeadingIndicator={showsUserHeadingIndicator}
           androidRenderMode={androidRenderMode}
+          animated={false}
         >
           {renderMode === ExampleRenderMode.CustomChildren
             ? [

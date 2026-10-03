@@ -4552,7 +4552,7 @@
         "required": false,
         "type": "'normal' \\| 'compass' \\| 'gps'",
         "default": "none",
-        "description": "Android render mode.\n\n - normal: just a circle\n - compass: triangle with heading\n - gps: large arrow\n\n@deprecated use `puckBearing` for source and `bearingImage` for image\n@platform android"
+        "description": "Android render mode.\n\n - normal: blue dot with a white border; adds a small arrow when `puckBearingEnabled` is true\n - compass: blue dot with a white border and a small directional arrow\n - gps: same appearance as compass; use `puckBearing` to select heading or course\n\n@deprecated use `puckBearing` for source and `bearingImage` for image\n@platform android"
       },
       {
         "name": "puckBearing",
@@ -10586,7 +10586,7 @@
         "required": false,
         "type": "'normal' \\| 'compass' \\| 'gps'",
         "default": "none",
-        "description": "native/android only render mode\n\n - normal: just a circle\n - compass: triangle with heading\n - gps: large arrow\n\n@platform android"
+        "description": "native/android only render mode\n\n - normal: blue dot with a white border; adds a small arrow when the heading indicator is enabled\n - compass: blue dot with a white border and a small directional arrow\n - gps: same appearance as compass; the direction source is configured separately\n\n@platform android"
       },
       {
         "name": "animated",
