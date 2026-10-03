@@ -1,4 +1,5 @@
 import React, { type ReactElement } from 'react';
+import { Platform } from 'react-native';
 
 import locationManager from '../modules/location/locationManager';
 import { type Location } from '../modules/location/locationManager';
@@ -294,8 +295,22 @@ class UserLocation extends React.Component<Props, UserLocationState> {
 
     const props: React.ComponentProps<typeof LocationPuck> = {
       androidRenderMode,
-      puckBearingEnabled: showsUserHeadingIndicator,
-      puckBearing: showsUserHeadingIndicator ? 'heading' : undefined,
+      ...(Platform.OS === 'android'
+        ? {
+            // Keep the native bearing stream available for a compass-following camera.
+            // This prop only controls the arrow drawn over the puck.
+            showBearingIndicator: showsUserHeadingIndicator,
+            ...(showsUserHeadingIndicator
+              ? {
+                  puckBearingEnabled: true,
+                  puckBearing: 'heading' as const,
+                }
+              : {}),
+          }
+        : {
+            puckBearingEnabled: showsUserHeadingIndicator,
+            puckBearing: showsUserHeadingIndicator ? 'heading' : undefined,
+          }),
     };
     return <LocationPuck {...props} />;
   }

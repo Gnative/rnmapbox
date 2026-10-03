@@ -67,6 +67,11 @@ class RNMBXNativeUserLocationManager : ViewGroupManager<RNMBXNativeUserLocation>
         }
     }
 
+    @ReactProp(name = "showBearingIndicator")
+    override fun setShowBearingIndicator(view: RNMBXNativeUserLocation, value: Dynamic) {
+        view.showBearingIndicator = value.asBooleanOrNull()
+    }
+
     @ReactProp(name = "topImage")
     override fun setTopImage(view: RNMBXNativeUserLocation, value: Dynamic?) {
         view.topImage = value?.asStringOrNull()
