@@ -47,10 +47,9 @@ export interface MapUpdatesPauseState {
  */
 interface Coordinates {
   /**
-   * The heading (measured in degrees) relative to true north.
+   * The compass heading (measured in degrees) supplied by the platform's Mapbox heading provider.
    * Heading is used to describe the direction the device is pointing to (the value of the compass).
-   * Note that on Android this is incorrectly reporting the course value as mentioned in issue https://github.com/rnmapbox/maps/issues/1213
-   * and will be corrected in a future update.
+   * Available when the provider has a compass reading; independent of movement course.
    */
   heading?: number;
 
@@ -255,7 +254,8 @@ export class LocationManager {
 
   /**
    * Sets the period at which location events will be sent over the React Native bridge.
-   * The default is 0, aka no limit. [V10, iOS only]
+   * Applies to position and compass heading events on both platforms.
+   * The default is 0, aka no limit.
    *
    * @example
    * locationManager.setLocationEventThrottle(500);

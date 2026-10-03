@@ -10610,6 +10610,13 @@
         "description": "Minimum amount of movement before GPS location is updated in meters"
       },
       {
+        "name": "throttleEvents",
+        "required": false,
+        "type": "number",
+        "default": "0",
+        "description": "Minimum interval between JS location updates in milliseconds, on both platforms.\nDefaults to 0 (no throttling).\nNative puck and camera updates are not throttled by this setting."
+      },
+      {
         "name": "onPress",
         "required": false,
         "type": {
@@ -10628,6 +10635,13 @@
         },
         "default": "none",
         "description": "Callback that is triggered on location update\n*signature:*`(location:Location) => void`"
+      },
+      {
+        "name": "disableHeadingUpdates",
+        "required": false,
+        "type": "boolean",
+        "default": "none",
+        "description": "Disable heading-driven location broadcasts. Position and movement course updates continue."
       },
       {
         "name": "renderMode",

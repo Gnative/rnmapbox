@@ -10,14 +10,17 @@ import java.util.*
 
 import com.rnmapbox.rnmbx.v11compat.location.*
 
-class LocationEvent(private val location: Location, private val mapView: RNMBXMapView?) : IEvent {
+class LocationEvent(
+    private val location: Location,
+    private val mapView: RNMBXMapView? = null,
+    private val heading: Double? = null,
+    private val eventTimestamp: Long = location.timestamp,
+) : IEvent {
     val uUID: UUID
 
     init {
         uUID = UUID.randomUUID()
     }
-
-    constructor(location: Location) : this(location, null) {}
 
     override val iD
         get() =  mapView?.id ?: -1
@@ -50,10 +53,10 @@ class LocationEvent(private val location: Location, private val mapView: RNMBXMa
             coords.putDouble("altitude", it)
         }
         coords.putDouble("accuracy", location.accuracy.toDouble())
-        // A better solution will be to pull the heading from the compass engine,
-        // unfortunately the api is not publicly available in the mapbox sdk
+        // Compass heading comes from the Maps SDK's HEADING provider subscription.
+        // Common Location.bearing describes movement course and must remain separate.
+        heading?.let { coords.putDouble("heading", it) }
         location.bearing?.let {
-            coords.putDouble("heading", it.toDouble())
             coords.putDouble("course", it.toDouble())
         }
         location.speed?.let {
@@ -61,7 +64,7 @@ class LocationEvent(private val location: Location, private val mapView: RNMBXMa
         }
         positionProperties.putMap("coords", coords)
 
-        positionProperties.putDouble("timestamp", location.timestamp.toDouble())
+        positionProperties.putDouble("timestamp", eventTimestamp.toDouble())
         return positionProperties
     }
 

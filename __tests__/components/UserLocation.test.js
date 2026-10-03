@@ -24,6 +24,9 @@ describe('UserLocation', () => {
   describe('renderUL', () => {
     jest.spyOn(locationManager, 'start').mockImplementation(jest.fn());
     jest
+      .spyOn(locationManager, 'setLocationEventThrottle')
+      .mockImplementation(jest.fn());
+    jest
       .spyOn(locationManager, 'getLastKnownLocation')
       .mockImplementation(() => position);
 
@@ -294,6 +297,31 @@ describe('UserLocation', () => {
     });
 
     describe('#_onLocationUpdate', () => {
+      test('stationary compass changes update heading independently of course', () => {
+        const stationary = {
+          ...position,
+          coords: { ...position.coords, heading: 45, course: 270 },
+        };
+        ul._onLocationUpdate(stationary);
+        ul._onLocationUpdate({
+          ...stationary,
+          coords: { ...stationary.coords, heading: 90 },
+        });
+        expect(ul.setState).toHaveBeenLastCalledWith({
+          coordinates: [position.coords.longitude, position.coords.latitude],
+          heading: 90,
+        });
+      });
+
+      test('course does not substitute for an unavailable compass heading', () => {
+        const { heading, ...coords } = position.coords;
+        ul._onLocationUpdate({ ...position, coords });
+        expect(ul.setState).toHaveBeenCalledWith({
+          coordinates: [position.coords.longitude, position.coords.latitude],
+          heading: null,
+        });
+      });
+
       test('sets state with new location', () => {
         expect(ul.state.coordinates).toStrictEqual(null);
         ul._onLocationUpdate(position);

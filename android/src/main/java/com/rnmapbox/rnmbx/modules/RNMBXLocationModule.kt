@@ -2,6 +2,9 @@ package com.rnmapbox.rnmbx.modules
 
 import com.facebook.react.bridge.*
 import com.rnmapbox.rnmbx.location.LocationManager
+import com.rnmapbox.rnmbx.location.HeadingLocationProvider
+import com.mapbox.maps.plugin.locationcomponent.DefaultLocationProvider
+import com.facebook.react.common.LifecycleState
 import com.facebook.react.module.annotations.ReactModule
 import com.rnmapbox.rnmbx.NativeRNMBXLocationModuleSpec
 import com.rnmapbox.rnmbx.location.LocationManager.OnUserLocationChange
@@ -12,6 +15,11 @@ import java.lang.Exception
 import com.rnmapbox.rnmbx.v11compat.location.*
 
 data class LocationEventThrottle(var waitBetweenEvents: Double? = null, var lastSentTimestamp: Long? = null) {
+    fun shouldSend(nowNanos: Long): Boolean {
+        val interval = waitBetweenEvents ?: return true
+        val lastSent = lastSentTimestamp ?: return true
+        return nowNanos - lastSent > 1_000_000.0 * interval
+    }
 }
 
 @ReactModule(name = RNMBXLocationModule.REACT_CLASS)
@@ -19,23 +27,37 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
     NativeRNMBXLocationModuleSpec(reactContext) {
     private var isEnabled = false
     private var headingUpdatesEnabled = true
+    private var hostResumed = reactContext.lifecycleState == LifecycleState.RESUMED
+    private val headingProvider by lazy {
+        HeadingLocationProvider(DefaultLocationProvider(reactContext.applicationContext)) {
+            mLastLocation?.let { location ->
+                sendLocationEvent(location, System.currentTimeMillis())
+            }
+        }
+    }
     private var mMinDisplacement = 0f
     private val locationManager: LocationManager? = getInstance(reactContext)
     private var mLastLocation: Location? = null
-    private var locationEventThrottle: LocationEventThrottle = LocationEventThrottle()
+    private val locationEventThrottle = LocationEventThrottle()
 
     private val lifecycleEventListener: LifecycleEventListener = object : LifecycleEventListener {
         override fun onHostResume() {
+            hostResumed = true
             if (isEnabled) {
                 locationManager?.resume()
             }
+            updateHeadingSubscription()
         }
 
         override fun onHostPause() {
+            hostResumed = false
+            updateHeadingSubscription()
             locationManager?.pause()
         }
 
         override fun onHostDestroy() {
+            hostResumed = false
+            updateHeadingSubscription()
             locationManager?.destroy()
         }
     }
@@ -50,16 +72,14 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
                     lastLocation.longitude != location.longitude ||
                     lastLocation.altitude != location.altitude ||
                     lastLocation.accuracy != location.accuracy ||
-                    (headingUpdatesEnabled && lastLocation.bearing != location.bearing)
+                    lastLocation.bearing != location.bearing
                 ) {
                     changed = true
                 }
             }
             mLastLocation = location
-            if (changed && (location != null) && shouldSendLocationEvent()) {
-                val locationEvent = LocationEvent(location)
-                locationEventThrottle.lastSentTimestamp = System.nanoTime()
-                emitOnLocationUpdate(locationEvent.toJSON())
+            if (changed && location != null) {
+                sendLocationEvent(location)
             }
         }
     }
@@ -74,21 +94,27 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     override fun start(minDisplacement: Double) {
-        isEnabled = true
-        mMinDisplacement = minDisplacement.toFloat()
-        locationManager?.startCounted()
-        startLocationManager()
+        UiThreadUtil.runOnUiThread {
+            if (isEnabled) {
+                setMinDisplacement(minDisplacement)
+                return@runOnUiThread
+            }
+            isEnabled = true
+            mMinDisplacement = minDisplacement.toFloat()
+            startLocationManager()
+            updateHeadingSubscription()
+        }
     }
 
     @ReactMethod
     override fun setMinDisplacement(value: Double) {
-        val minDisplacement = value.toFloat()
-        if (mMinDisplacement == minDisplacement) return
-        mMinDisplacement = minDisplacement
-        if (isEnabled) {
-
-            // set minimal displacement in the manager
-            locationManager!!.setMinDisplacement(mMinDisplacement)
+        UiThreadUtil.runOnUiThread {
+            val minDisplacement = value.toFloat()
+            if (mMinDisplacement == minDisplacement) return@runOnUiThread
+            mMinDisplacement = minDisplacement
+            if (isEnabled) {
+                locationManager!!.setMinDisplacement(mMinDisplacement)
+            }
         }
     }
 
@@ -99,12 +125,18 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     override fun setHeadingUpdatesEnabled(enabled: Boolean) {
-        headingUpdatesEnabled = enabled
+        UiThreadUtil.runOnUiThread {
+            headingUpdatesEnabled = enabled
+            updateHeadingSubscription()
+        }
     }
 
     @ReactMethod
     override fun stop() {
-        stopLocationManager()
+        UiThreadUtil.runOnUiThread {
+            stopLocationManager()
+            updateHeadingSubscription()
+        }
     }
 
     @ReactMethod
@@ -114,7 +146,7 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
                 override fun onSuccess(result: LocationEngineResult) {
                     val location = result.lastLocation
                     if (location != null) {
-                        val locationEvent = LocationEvent(location)
+                        val locationEvent = LocationEvent(location, heading = headingProvider.latestHeading)
                         promise.resolve(locationEvent.payload)
                     } else {
                         promise.resolve(null)
@@ -149,6 +181,21 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
         locationManager.startCounted()
     }
 
+    private fun updateHeadingSubscription() {
+        if (isEnabled && hostResumed && headingUpdatesEnabled) {
+            headingProvider.start()
+        } else {
+            headingProvider.stop()
+        }
+    }
+
+    private fun sendLocationEvent(location: Location, timestamp: Long = location.timestamp) {
+        if (!isEnabled || !shouldSendLocationEvent()) return
+        val event = LocationEvent(location, heading = headingProvider.latestHeading, eventTimestamp = timestamp)
+        locationEventThrottle.lastSentTimestamp = System.nanoTime()
+        emitOnLocationUpdate(event.toJSON())
+    }
+
     private fun stopLocationManager() {
         if (!isEnabled) {
             return
@@ -162,31 +209,13 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
     // region Location event throttle
     @ReactMethod
     override fun setLocationEventThrottle(throttleValue: Double) {
-        if (throttleValue > 0) {
-            locationEventThrottle.waitBetweenEvents = throttleValue;
-        } else {
-
-            locationEventThrottle.waitBetweenEvents = null
+        UiThreadUtil.runOnUiThread {
+            locationEventThrottle.waitBetweenEvents = throttleValue.takeIf { it > 0 }
         }
     }
 
     fun shouldSendLocationEvent(): Boolean {
-        val waitBetweenEvents = locationEventThrottle.waitBetweenEvents
-        if (waitBetweenEvents == null) {
-            return true
-        }
-
-        val currentTimestamp = System.nanoTime()
-        val lastSentTimestamp = locationEventThrottle.lastSentTimestamp
-        if (lastSentTimestamp == null) {
-            return true
-        }
-
-        if ((currentTimestamp - lastSentTimestamp) > 1000.0*waitBetweenEvents) {
-            return true
-        }
-
-        return false
+        return locationEventThrottle.shouldSend(System.nanoTime())
     }
 
     @ReactMethod
@@ -199,6 +228,15 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
         locationManager?.resumeUpdates(clearAll)
     }
     // endregion
+
+    override fun invalidate() {
+        UiThreadUtil.runOnUiThread {
+            stopLocationManager()
+            headingProvider.stop()
+            reactApplicationContext.removeLifecycleEventListener(lifecycleEventListener)
+        }
+        super.invalidate()
+    }
 
 
     companion object {
