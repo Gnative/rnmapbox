@@ -35,14 +35,6 @@ export type Props = {
   puckBearingEnabled?: boolean;
 
   /**
-   * Whether the default directional arrow is drawn. This only affects the arrow;
-   * it does not disable heading or course updates.
-   *
-   * @platform android
-   */
-  showBearingIndicator?: boolean;
-
-  /**
    * iOS only. A Boolean value indicating whether the user location annotation may display a permanent heading indicator.
    *
    * @platform ios
