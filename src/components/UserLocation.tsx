@@ -95,9 +95,9 @@ type Props = {
   minDisplacement?: number;
 
   /**
-   * Throttle events on iOS to reduce the number of location updates received
-   *
-   * @platform ios
+   * Minimum interval between JS location updates in milliseconds, on both platforms.
+   * Defaults to 0 (no throttling).
+   * Native puck and camera updates are not throttled by this setting.
    */
   throttleEvents?: number;
 
@@ -112,9 +112,7 @@ type Props = {
   onUpdate?: (location: Location) => void;
 
   /**
-   * Disable heading-driven location broadcasts on iOS so JS only receives displacement-based updates.
-   *
-   * @platform ios
+   * Disable heading-driven location broadcasts. Position and movement course updates continue.
    */
   disableHeadingUpdates?: boolean;
 

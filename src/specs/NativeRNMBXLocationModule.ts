@@ -8,10 +8,11 @@ type LocationEvent = {
     coords: {
       latitude: number;
       longitude: number;
-      altitude: number;
-      accuracy: number;
-      speed: number;
-      heading: number;
+      altitude?: number;
+      accuracy?: number;
+      speed?: number;
+      heading?: number;
+      course?: number;
     };
     timestamp: number;
   };

@@ -12,16 +12,15 @@ import com.rnmapbox.rnmbx.v11compat.location.*
 
 class LocationEvent(
     private val location: Location,
-    private val mapView: RNMBXMapView?,
-    private val heading: Double? = null
+    private val mapView: RNMBXMapView? = null,
+    private val heading: Double? = null,
+    private val eventTimestamp: Long = location.timestamp,
 ) : IEvent {
     val uUID: UUID
 
     init {
         uUID = UUID.randomUUID()
     }
-
-    constructor(location: Location, heading: Double? = null) : this(location, null, heading)
 
     override val iD
         get() =  mapView?.id ?: -1
@@ -54,18 +53,18 @@ class LocationEvent(
             coords.putDouble("altitude", it)
         }
         coords.putDouble("accuracy", location.accuracy.toDouble())
+        // Compass heading comes from the device orientation sensors.
+        // Common Location.bearing describes movement course and must remain separate.
+        heading?.let { coords.putDouble("heading", it) }
         location.bearing?.let {
             coords.putDouble("course", it.toDouble())
-        }
-        heading?.let {
-            coords.putDouble("heading", it)
         }
         location.speed?.let {
             coords.putDouble("speed", it.toDouble())
         }
         positionProperties.putMap("coords", coords)
 
-        positionProperties.putDouble("timestamp", location.timestamp.toDouble())
+        positionProperties.putDouble("timestamp", eventTimestamp.toDouble())
         return positionProperties
     }
 

@@ -57,6 +57,18 @@ Minimum amount of movement before GPS location is updated in meters
   _defaults to:_ `0`
 [Set Displacement](../examples/UserLocation/SetDisplacement)
   
+### throttleEvents
+
+```tsx
+number
+```
+Minimum interval between JS location updates in milliseconds, on both platforms.
+Defaults to 0 (no throttling).
+Native puck and camera updates are not throttled by this setting.
+
+  _defaults to:_ `0`
+
+
 ### onPress
 
 ```tsx
@@ -76,6 +88,15 @@ Callback that is triggered on location update
 *signature:*`(location:Location) =&gt; void`
 
 [User Location Updates](../examples/UserLocation/UserLocationUpdates)
+
+### disableHeadingUpdates
+
+```tsx
+boolean
+```
+Disable heading-driven location broadcasts. Position and movement course updates continue.
+
+
   
 ### renderMode
 
