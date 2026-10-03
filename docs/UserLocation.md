@@ -20,9 +20,9 @@ UserLocation
 ```
 native/android only render mode
 
- - normal: just a circle
- - compass: triangle with heading
- - gps: large arrow
+ - normal: blue dot with a white border; adds a small arrow when the heading indicator is enabled
+ - compass: blue dot with a white border and a small directional arrow
+ - gps: same appearance as compass; the direction source is configured separately
 
 @platform android
 

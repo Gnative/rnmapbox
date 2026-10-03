@@ -145,7 +145,11 @@ class RNMBXNativeUserLocation(context: Context) : AbstractMapFeature(context), O
             location2.locationPuck = locationPuck3D
         } else if (visible) {
             val puck = if (images.isEmpty()) {
-                makeDefaultLocationPuck2D(mContext, androidRenderMode ?: RenderMode.NORMAL)
+                makeDefaultLocationPuck2D(
+                    mContext,
+                    androidRenderMode ?: RenderMode.NORMAL,
+                    showBearing = puckBearingEnabled ?: location2.puckBearingEnabled,
+                )
             } else {
                 LocationPuck2D(
                     topImage = images[PuckImagePart.TOP],
@@ -323,20 +327,22 @@ private fun ReadableArray.toFloatListOrNull(): List<Float>? =
 private fun ReadableArray.toExpressionJsonOrNull(): String? =
     if (isExpression()) Gson().toJson(toJsonArray()) else null
 
-fun makeDefaultLocationPuck2D(context: Context, renderMode: RenderMode): LocationPuck2D {
+fun makeDefaultLocationPuck2D(
+    context: Context,
+    renderMode: RenderMode,
+    showBearing: Boolean = false,
+): LocationPuck2D {
     return LocationPuck2D(
+        // Keep the dot and its white border together in the fixed top layer.
+        // Only the small directional indicator belongs in the rotating bearing layer.
         topImage = AppCompatResourcesV11.getDrawableImageHolder(
             context,
-            LR.drawable.mapbox_user_icon
+            R.drawable.rnmbx_user_location_dot
         ),
-        bearingImage = AppCompatResourcesV11.getDrawableImageHolder(
+        bearingImage = if (showBearing || renderMode != RenderMode.NORMAL) AppCompatResourcesV11.getDrawableImageHolder(
             context,
-            when (renderMode) {
-                RenderMode.GPS -> LR.drawable.mapbox_user_bearing_icon
-                RenderMode.COMPASS -> LR.drawable.mapbox_user_puck_icon
-                RenderMode.NORMAL -> LR.drawable.mapbox_user_stroke_icon
-            }
-        ),
+            R.drawable.rnmbx_user_location_bearing
+        ) else null,
         shadowImage = AppCompatResourcesV11.getDrawableImageHolder(
             context,
             LR.drawable.mapbox_user_icon_shadow
