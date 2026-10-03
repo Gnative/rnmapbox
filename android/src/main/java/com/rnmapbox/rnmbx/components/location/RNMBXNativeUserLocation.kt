@@ -56,7 +56,6 @@ class RNMBXNativeUserLocation(context: Context) : AbstractMapFeature(context), O
     var androidRenderMode: RenderMode? = null
     var puckBearing: PuckBearing? = null
     var puckBearingEnabled: Boolean? = null
-    var showBearingIndicator: Boolean? = null
     // endregion
 
     enum class PuckImagePart {
@@ -136,7 +135,7 @@ class RNMBXNativeUserLocation(context: Context) : AbstractMapFeature(context), O
                     makeDefaultLocationPuck2D(
                         mContext,
                         androidRenderMode ?: RenderMode.NORMAL,
-                        showBearing = showBearingIndicator ?: (puckBearingEnabled ?: location2.puckBearingEnabled),
+                        showBearing = puckBearingEnabled ?: location2.puckBearingEnabled,
                     )
             } else {
                 location2.locationPuck = LocationPuck2D(
@@ -292,7 +291,7 @@ class RNMBXNativeUserLocation(context: Context) : AbstractMapFeature(context), O
 fun makeDefaultLocationPuck2D(
     context: Context,
     renderMode: RenderMode,
-    showBearing: Boolean? = null,
+    showBearing: Boolean = false,
 ): LocationPuck2D {
     return LocationPuck2D(
         // Keep the dot and its white border together in the fixed top layer.
@@ -301,7 +300,7 @@ fun makeDefaultLocationPuck2D(
             context,
             R.drawable.rnmbx_user_location_dot
         ),
-        bearingImage = if (showBearing ?: (renderMode != RenderMode.NORMAL)) AppCompatResourcesV11.getDrawableImageHolder(
+        bearingImage = if (showBearing || renderMode != RenderMode.NORMAL) AppCompatResourcesV11.getDrawableImageHolder(
             context,
             R.drawable.rnmbx_user_location_bearing
         ) else null,
