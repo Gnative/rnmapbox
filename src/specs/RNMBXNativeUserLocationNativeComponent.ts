@@ -26,6 +26,7 @@ export interface NativeProps extends ViewProps {
   androidRenderMode?: OptionalProp<string>;
   puckBearing?: OptionalProp<'heading' | 'course'>;
   puckBearingEnabled?: OptionalProp<boolean>;
+  showBearingIndicator?: OptionalProp<boolean>;
   bearingImage?: OptionalProp<string>;
   shadowImage?: OptionalProp<string>;
   topImage?: OptionalProp<string>;
