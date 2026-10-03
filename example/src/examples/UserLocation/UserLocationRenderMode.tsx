@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   MapView,
   CircleLayer,
@@ -49,6 +49,7 @@ const ANDROID_RENDER_MODES: ('normal' | 'compass' | 'gps')[] = [
 ];
 
 const UserLocationRenderMode = () => {
+  const camera = useRef<Camera>(null);
   const [renderMode, setRenderMode] = useState<ExampleRenderMode>(
     ExampleRenderMode.Normal,
   );
@@ -59,6 +60,14 @@ const UserLocationRenderMode = () => {
   const [androidRenderMode, setAndroidRenderMode] = useState<
     'normal' | 'compass' | 'gps'
   >('normal');
+
+  useEffect(() => {
+    camera.current?.setCamera({
+      followUserLocation,
+      followUserMode,
+      followZoomLevel: 18,
+    });
+  }, [followUserLocation, followUserMode]);
 
   return (
     <SafeAreaView style={styles.matchParent}>
@@ -110,13 +119,11 @@ const UserLocationRenderMode = () => {
 
       <MapView style={styles.matchParent} tintColor={'red'}>
         <Camera
+          ref={camera}
           defaultSettings={{
             centerCoordinate: DEFAULT_CENTER_COORDINATE,
             zoomLevel: 18,
           }}
-          followUserLocation={followUserLocation}
-          followUserMode={followUserMode}
-          followZoomLevel={18}
           onUserTrackingModeChange={(event) => {
             if (!event.nativeEvent.payload.followUserLocation) {
               setFollowUserLocation(false);

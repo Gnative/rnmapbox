@@ -1,6 +1,6 @@
 import React from 'react';
 import Mapbox from '@rnmapbox/maps';
-import { StyleSheet, Text, View } from 'react-native';
+import { AppState, Button, StyleSheet, Text, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -69,19 +69,67 @@ class App extends React.Component {
     this.state = {
       isFetchingAndroidPermission: IS_ANDROID,
       isAndroidPermissionGranted: false,
+      permissionError: false,
       activeExample: -1,
     };
+    this.permissionMounted = false;
+    this.permissionRequestInFlight = false;
   }
 
-  async componentDidMount() {
+  componentDidMount() {
+    this.permissionMounted = true;
     if (IS_ANDROID) {
-      const isGranted = await Mapbox.requestAndroidLocationPermissions();
-      this.setState({
-        isAndroidPermissionGranted: isGranted,
-        isFetchingAndroidPermission: false,
-      });
+      this.permissionSubscription = AppState.addEventListener(
+        'change',
+        (state) => {
+          if (state === 'active' && this.state.isFetchingAndroidPermission) {
+            this.requestAndroidPermission();
+          }
+        },
+      );
+      this.requestAndroidPermission();
     }
   }
+
+  componentWillUnmount() {
+    this.permissionMounted = false;
+    this.permissionSubscription?.remove();
+  }
+
+  requestAndroidPermission = async () => {
+    if (
+      !this.permissionMounted ||
+      AppState.currentState !== 'active' ||
+      this.permissionRequestInFlight ||
+      this.state.isAndroidPermissionGranted
+    ) {
+      return;
+    }
+    this.permissionRequestInFlight = true;
+    this.setState({
+      isFetchingAndroidPermission: true,
+      permissionError: false,
+    });
+    try {
+      const isGranted = await Mapbox.requestAndroidLocationPermissions();
+      if (this.permissionMounted) {
+        this.setState({
+          isAndroidPermissionGranted: isGranted,
+          isFetchingAndroidPermission: false,
+        });
+      }
+    } catch (error) {
+      console.warn('Unable to request Android location permission', error);
+      if (this.permissionMounted) {
+        this.setState({
+          isFetchingAndroidPermission: false,
+          permissionError: true,
+        });
+      }
+    } finally {
+      this.permissionRequestInFlight = false;
+    }
+  };
 
   render() {
     if (IS_ANDROID && !this.state.isAndroidPermissionGranted) {
@@ -94,9 +142,14 @@ class App extends React.Component {
         >
           <View style={sheet.matchParent}>
             <Text style={styles.noPermissionsText}>
-              You need to accept location permissions in order to use this
-              example applications
+              {this.state.permissionError
+                ? 'Location permission could not be requested. Please retry while the app is open.'
+                : 'You need to accept location permissions to use the example app.'}
             </Text>
+            <Button
+              title="Retry location permission"
+              onPress={this.requestAndroidPermission}
+            />
           </View>
         </SafeAreaView>
       );
