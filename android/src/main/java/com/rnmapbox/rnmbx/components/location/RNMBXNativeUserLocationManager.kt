@@ -104,6 +104,11 @@ class RNMBXNativeUserLocationManager : ViewGroupManager<RNMBXNativeUserLocation>
         return RNMBXNativeUserLocation(reactContext)
     }
 
+    override fun onAfterUpdateTransaction(view: RNMBXNativeUserLocation) {
+        super.onAfterUpdateTransaction(view)
+        view.applyAllChanges()
+    }
+
     companion object {
         const val REACT_CLASS = "RNMBXNativeUserLocation"
         const val TAG = "RNMBXNativeUserLocationManager"

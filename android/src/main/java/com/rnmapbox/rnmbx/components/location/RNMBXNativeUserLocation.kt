@@ -114,6 +114,10 @@ class RNMBXNativeUserLocation(context: Context) : AbstractMapFeature(context), O
         _apply()
     }
 
+    fun applyAllChanges() {
+        _apply()
+    }
+
     private fun _apply() {
         mMapView?.let {
             it.mapView?.let {
@@ -153,6 +157,7 @@ class RNMBXNativeUserLocation(context: Context) : AbstractMapFeature(context), O
         this.puckBearingEnabled?.let {
             location2.puckBearingEnabled = it
         }
+        mMapView?.locationComponentManager?.updateBearingSettings()
 
         pulsing?.let { pulsing ->
             pulsing.getAndLogIfNotString("kind")?.also { kind ->

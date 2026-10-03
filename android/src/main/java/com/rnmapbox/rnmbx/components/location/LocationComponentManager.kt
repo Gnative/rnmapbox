@@ -11,6 +11,7 @@ import com.mapbox.maps.plugin.locationcomponent.location
 import com.rnmapbox.rnmbx.R
 import com.rnmapbox.rnmbx.components.mapview.RNMBXMapView
 import com.rnmapbox.rnmbx.location.LocationManager
+import com.rnmapbox.rnmbx.location.PausableLocationProvider
 import com.rnmapbox.rnmbx.v11compat.image.AppCompatResourcesV11
 import com.rnmapbox.rnmbx.v11compat.image.ImageHolder
 import com.rnmapbox.rnmbx.v11compat.image.toBitmapImageHolder
@@ -41,6 +42,7 @@ class LocationComponentManager(mapView: RNMBXMapView, context: Context) {
     )
 
     private var mLocationManager: LocationManager = LocationManager.getInstance(context)
+    private val mapLocationProvider by lazy { mLocationManager.createMapLocationProvider() }
 
     private var mNeedsFullUpdate = true
 
@@ -174,7 +176,15 @@ class LocationComponentManager(mapView: RNMBXMapView, context: Context) {
     }
 
     private fun useMapLocationProvider(mapView: RNMBXMapView) {
-        mapView.mapView.location.setLocationProvider(mLocationManager.provider)
+        mapView.mapView.location.setLocationProvider(mapLocationProvider)
+        updateBearingSettings()
+    }
+
+    fun updateBearingSettings() {
+        val location = mMapView.mapView.location
+        (location.getLocationProvider() as? PausableLocationProvider)?.updatePuckBearing(
+            location.puckBearing.takeIf { location.puckBearingEnabled }
+        )
     }
 
 

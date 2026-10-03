@@ -5,11 +5,14 @@ import android.content.Context
 import com.mapbox.maps.plugin.locationcomponent.LocationConsumer
 import com.mapbox.android.core.permissions.PermissionsManager
 import android.os.Looper
+import android.os.Handler
 import android.util.Log
 import com.mapbox.geojson.Point
 import com.mapbox.maps.plugin.locationcomponent.LocationProvider
+import com.mapbox.maps.plugin.locationcomponent.DefaultLocationProvider
 import java.lang.ref.WeakReference
 import java.util.ArrayList
+import java.util.WeakHashMap
 import kotlin.Exception
 
 import com.rnmapbox.rnmbx.v11compat.location.*
@@ -94,14 +97,23 @@ class LocationManager private constructor(private val context: Context) : Locati
     var engine: LocationEngine? = null
         private set
     private val listeners: MutableList<OnUserLocationChange> = ArrayList()
-    private var mMinDisplacement = 0f
+    @Volatile private var mMinDisplacement = 0f
     private var isActive = false
     private var lastLocation: Location? = null
     // private var locationEngineRequest: LocationEngineRequest? = null
     private var locationProvider: LocationProvider? = null
     private var nStarts : Int = 0
     private var isPaused : Boolean = false
-    private var mapUpdatesPauseCount : Int = 0
+    @Volatile private var mapUpdatesPauseCount : Int = 0
+    private val mapLocationProviders = WeakHashMap<PausableLocationProvider, Unit>()
+
+    internal fun createMapLocationProvider(): PausableLocationProvider {
+        return PausableLocationProvider(
+            DefaultLocationProvider(context.applicationContext),
+            isPaused = { mapUpdatesPauseCount > 0 },
+            minDisplacement = { mMinDisplacement.toDouble() },
+        ).also { mapLocationProviders[it] = Unit }
+    }
 
     var provider: LocationProvider
         get() {
@@ -156,6 +168,11 @@ class LocationManager private constructor(private val context: Context) : Locati
     fun resumeUpdates(clearAll: Boolean = false) {
         mapUpdatesPauseCount = if (clearAll) 0 else maxOf(0, mapUpdatesPauseCount - 1)
         if (mapUpdatesPauseCount > 0) return
+
+        // SDK consumers update the map and must be called on its UI thread.
+        Handler(Looper.getMainLooper()).post {
+            mapLocationProviders.keys.toList().forEach { it.resumeUpdates() }
+        }
 
         val provider = locationProvider
         val location = lastLocation

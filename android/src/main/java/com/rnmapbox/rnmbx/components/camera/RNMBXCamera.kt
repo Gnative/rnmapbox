@@ -526,12 +526,6 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
             }
 
             mLocationComponentManager?.setFollowLocation(true)
-            mLocationManager?.let {
-                val provider = map.location.getLocationProvider()
-                if (provider != null) {
-                    it.provider = provider
-                }
-            }
 
             val location = map.location2
             val followOptions = FollowPuckViewportStateOptions.Builder()
@@ -562,6 +556,8 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
                     Logger.e("RNMBXCamera", "unexpected follow mode: $mFollowUserMode")
                 }
             }
+
+            mLocationComponentManager?.updateBearingSettings()
 
             when(val it=mFollowZoomLevel) {
                 null -> followOptions.zoom(cameraState.zoom)
