@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "android": "yarn react-native run-android",
+    "android": "yarn react-native run-android --list-devices --active-arch-only",
     "ios": "yarn react-native run-ios --simulator=\"iPhone SE (3rd generation)\"",
     "web": "expo start -c --web",
     "pod:install": "cd ios && pod install",
