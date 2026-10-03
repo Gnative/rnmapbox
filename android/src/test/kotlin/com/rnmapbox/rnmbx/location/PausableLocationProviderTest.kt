@@ -113,6 +113,47 @@ class PausableLocationProviderTest {
     }
 
     @Test
+    fun `resume does not replay an intermediate position after returning within displacement`() {
+        val provider = PausableLocationProvider(delegate, isPaused = { pauseCount > 0 }, minDisplacement = { 100.0 })
+        provider.registerLocationConsumer(target)
+        val capture = argumentCaptor<LocationConsumer>()
+        verify(delegate).registerLocationConsumer(capture.capture())
+        val consumer = capture.firstValue
+        val origin = Point.fromLngLat(16.0, 48.0)
+        val intermediate = Point.fromLngLat(16.003, 48.0)
+        val latest = Point.fromLngLat(16.00001, 48.0)
+        consumer.onLocationUpdated(origin)
+        clearInvocations(target)
+
+        pauseCount = 1
+        consumer.onLocationUpdated(intermediate)
+        consumer.onLocationUpdated(latest)
+        pauseCount = 0
+        provider.resumeUpdates()
+        verifyNoInteractions(target)
+
+        // Resume must not move the displacement baseline to the intermediate point.
+        consumer.onLocationUpdated(latest)
+        verifyNoInteractions(target)
+    }
+
+    @Test
+    fun `fresh callbacks arriving before the resume task discard older pending values`() {
+        val consumer = register()
+        pauseCount = 1
+        consumer.onLocationUpdated(Point.fromLngLat(16.0, 48.0))
+        consumer.onBearingUpdated(45.0)
+        consumer.onHorizontalAccuracyRadiusUpdated(20.0)
+        pauseCount = 0
+        consumer.onLocationUpdated(Point.fromLngLat(16.1, 48.1))
+        consumer.onBearingUpdated(90.0)
+        consumer.onHorizontalAccuracyRadiusUpdated(5.0)
+        clearInvocations(target)
+        provider.resumeUpdates()
+        verifyNoInteractions(target)
+    }
+
+    @Test
     fun `registering the same consumer twice does not start another SDK subscription`() {
         register()
         provider.registerLocationConsumer(target)
