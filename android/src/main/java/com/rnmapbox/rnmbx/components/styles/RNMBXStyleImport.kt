@@ -6,7 +6,6 @@ import com.mapbox.bindgen.Value
 import com.rnmapbox.rnmbx.components.AbstractMapFeature
 import com.rnmapbox.rnmbx.components.mapview.RNMBXMapView
 
-import com.rnmapbox.rnmbx.v11compat.style.*
 
 class RNMBXStyleImport(context: Context) : AbstractMapFeature(context) {
     var id: String? = null;
