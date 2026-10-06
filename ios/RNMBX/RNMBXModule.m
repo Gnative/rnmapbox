@@ -3,6 +3,7 @@
 @interface RCT_EXTERN_MODULE(RNMBXModule, NSObject)
 
 RCT_EXTERN_METHOD(setAccessToken:(NSString *)accessToken resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(getMapboxSDKVersion:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(addCustomHeader:(NSString *)headerName forHeaderValue:(NSString *) headerValue)
 RCT_EXTERN_METHOD(addCustomHeaderWithOptions:(NSString *)headerName forHeaderValue:(NSString *) headerValue forOptions:(nullable NSDictionary *) options)
