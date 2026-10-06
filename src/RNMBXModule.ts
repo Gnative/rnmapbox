@@ -36,6 +36,7 @@ interface RNMBXModule {
     options: { urlRegexp?: string },
   ): void;
   setAccessToken(accessToken: string | null): Promise<string | null>;
+  getMapboxSDKVersion(): Promise<string | null>;
   setWellKnownTileServer(tileServer: string): void;
   clearData(): Promise<void>;
   getAccessToken(): Promise<string>;
@@ -99,6 +100,7 @@ export const {
   LineJoin,
   StyleSource,
   TileServers,
+  getMapboxSDKVersion,
   removeCustomHeader,
   setAccessToken,
   setWellKnownTileServer,

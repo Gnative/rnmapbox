@@ -86,6 +86,20 @@ class RNMBXModule : NSObject {
       return true
   }
 
+  @objc func getMapboxSDKVersion(
+    _ resolver: @escaping RCTPromiseResolveBlock,
+    rejecter: @escaping RCTPromiseRejectBlock) {
+    let frameworkBundle = Bundle(for: MapView.self)
+    let resourceBundle = frameworkBundle.path(forResource: "MapboxMapsResources", ofType: "bundle")
+      .flatMap(Bundle.init(path:)) ?? frameworkBundle
+    let version = resourceBundle.url(forResource: "MapboxMaps", withExtension: "json")
+      .flatMap { try? Data(contentsOf: $0) }
+      .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+      .flatMap { $0["version"] as? String }
+
+    resolver(version)
+  }
+
   @objc func setAccessToken(
     _ token: String, 
     resolver: RCTPromiseResolveBlock,

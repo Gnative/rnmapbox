@@ -142,6 +142,16 @@ class RNMBXModule(private val mReactContext: ReactApplicationContext) : ReactCon
     }
 
     @ReactMethod
+    fun getMapboxSDKVersion(promise: Promise) {
+        mReactContext.runOnUiQueueThread {
+            val version = SdkInformationQuery.getSdkInformation()
+                .firstOrNull { it.name.contains("maps", ignoreCase = true) }
+                ?.version
+            promise.resolve(version)
+        }
+    }
+
+    @ReactMethod
     fun clearData(promise: Promise) {
         mReactContext.runOnUiQueueThread {
             MapboxMap.clearData(mReactContext) {
