@@ -52,6 +52,20 @@
       },
       {
         "metadata": {
+          "title": "Offline Legacy Example",
+          "tags": [
+            "offlineManagerLegacy#createPack",
+            "offlineManagerLegacy#getPack",
+            "offlineManagerLegacy#getPacks"
+          ],
+          "docs": "\nDemonstates basic use of offlineManagerLegacy api.\n"
+        },
+        "fullPath": "example/src/examples/CacheOffline/OfflineLegacyExample.tsx",
+        "relPath": "CacheOffline/OfflineLegacyExample.tsx",
+        "name": "OfflineLegacyExample"
+      },
+      {
+        "metadata": {
           "title": "Offline Tilesets",
           "tags": [],
           "docs": "\nUses offline manager tileset option to include additional tilesets in the offline pack.\n\nTo test:\n- First load the example with wifi/netowork off, make sure the map is blank, and also pressing \"Center Offline Location\" is blank\n- Close the test, enable wifi, open test again\n- Disable wifi/network presss \"Center Offline Location\" make sure blue line which shows country contours show up\n"

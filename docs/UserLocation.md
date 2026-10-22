@@ -68,7 +68,7 @@ Native puck and camera updates are not throttled by this setting.
 
   _defaults to:_ `0`
 
-
+  
 ### onPress
 
 ```tsx
@@ -88,7 +88,7 @@ Callback that is triggered on location update
 *signature:*`(location:Location) =&gt; void`
 
 [User Location Updates](../examples/UserLocation/UserLocationUpdates)
-
+  
 ### disableHeadingUpdates
 
 ```tsx
@@ -164,5 +164,7 @@ If locationManager should be running
 #### arguments
 | Name | Type | Required | Description  |
 | ---- | :--: | :------: | :----------: |
+
+
 
 

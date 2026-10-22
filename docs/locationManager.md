@@ -15,7 +15,7 @@ LocationManager is a singleton, see
 ## methods
 ### setLocationEventThrottle(throttleValue)
 
-Sets the period at which location events will be sent over the React Native bridge.<br/>The default is 0, aka no limit. [V10, iOS only]
+Sets the period at which location events will be sent over the React Native bridge.<br/>Applies to position and compass heading events on both platforms.<br/>The default is 0, aka no limit.
 
 #### arguments
 | Name | Type | Required | Description  |

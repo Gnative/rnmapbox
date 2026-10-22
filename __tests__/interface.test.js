@@ -98,6 +98,7 @@ describe('Public Interface', () => {
       'clearData',
       'setAccessToken',
       'getAccessToken',
+      'getMapboxSDKVersion',
       'setTelemetryEnabled',
       'setConnected',
       'setLanguage',

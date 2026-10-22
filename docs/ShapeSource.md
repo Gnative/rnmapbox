@@ -45,6 +45,7 @@ An HTTP(S) URL, absolute file URL, or local file URL relative to the current app
 ### shape
 
 ```tsx
+| string
 | GeoJSON.GeometryCollection
 | GeoJSON.Feature
 | GeoJSON.FeatureCollection

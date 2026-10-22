@@ -15,29 +15,34 @@ The shared object maintains a canonical collection of offline packs.
 
 
 ## methods
-### createPack(options)
+### createPack(options[, progressListener][, errorListener])
 
 Creates and registers an offline pack that downloads the resources needed to use the given region offline.
 
 #### arguments
 | Name | Type | Required | Description  |
 | ---- | :--: | :------: | :----------: |
-| `options` | `OfflineCreatePackOptions` | `Yes` | Create options for a offline pack that specifices zoom levels, style url, and the region to download. |
+| `options` | `OfflineLegacyCreatePackOptions` | `Yes` | Create options for a offline pack that specifices zoom levels, style url, and the region to download. |
+| `progressListener` | `Callback` | `No` | Callback that listens for status events while downloading the offline resource. |
+| `errorListener` | `Callback` | `No` | Callback that listens for status events while downloading the offline resource. |
 
 
 
 ```javascript
+const progressListener = (offlineRegion, status) => console.log(offlineRegion, status);
+const errorListener = (offlineRegion, err) => console.log(offlineRegion, err);
+
 await Mapbox.offlineManager.createPack({
   name: 'offlinePack',
   styleURL: 'mapbox://...',
   minZoom: 14,
   maxZoom: 20,
   bounds: [[neLng, neLat], [swLng, swLat]]
-})
+}, progressListener, errorListener)
 ```
 
 
-### invalidatePack(name)
+[Offline Legacy Example](../examples/CacheOffline/OfflineLegacyExample)### invalidatePack(name)
 
 Invalidates the specified offline pack. This method checks that the tiles in the specified offline pack match those from the server. Local tiles that do not match the latest version on the server are updated.This is more efficient than deleting the offline pack and downloading it again. If the data stored locally matches that on the server, new data will not be downloaded.
 
@@ -117,7 +122,7 @@ const offlinePacks = await Mapbox.offlineManagerLegacy.getPacks();
 ```
 
 
-### getPack(name)
+[Offline Legacy Example](../examples/CacheOffline/OfflineLegacyExample)### getPack(name)
 
 Retrieves an offline pack that is stored in the database by name.
 
@@ -133,7 +138,7 @@ const offlinePack = await Mapbox.offlineManagerLegacy.getPack();
 ```
 
 
-### setTileCountLimit(limit)
+[Offline Legacy Example](../examples/CacheOffline/OfflineLegacyExample)### setTileCountLimit(limit)
 
 Sets the maximum number of Mapbox-hosted tiles that may be downloaded and stored on the current device.<br/>The Mapbox Terms of Service prohibit changing or bypassing this limit without permission from Mapbox.
 
@@ -147,4 +152,58 @@ Sets the maximum number of Mapbox-hosted tiles that may be downloaded and stored
 ```javascript
 Mapbox.offlineManagerLegacy.setTileCountLimit(1000);
 ```
+
+
+### setTimeout(seconds)
+
+Sets the timeout for the pack download when no progress updates have been sent, throws a timeout error
+
+#### arguments
+| Name | Type | Required | Description  |
+| ---- | :--: | :------: | :----------: |
+| `seconds` | `Number` | `Yes` | Seconds after last progress update to fire an timeout error |
+
+
+
+```javascript
+Mapbox.offlineManager.setTimeout(60);
+```
+
+
+### subscribe(packName, progressListener, errorListener)
+
+Subscribe to download status/error events for the requested offline pack.<br/>Note that createPack calls this internally if listeners are provided.
+
+#### arguments
+| Name | Type | Required | Description  |
+| ---- | :--: | :------: | :----------: |
+| `packName` | `String` | `Yes` | Name of the offline pack. |
+| `progressListener` | `Callback` | `Yes` | Callback that listens for status events while downloading the offline resource. |
+| `errorListener` | `Callback` | `Yes` | Callback that listens for status events while downloading the offline resource. |
+
+
+
+```javascript
+const progressListener = (offlinePack, status) => console.log(offlinePack, status)
+const errorListener = (offlinePack, err) => console.log(offlinePack, err)
+Mapbox.offlineManager.subscribe('packName', progressListener, errorListener)
+```
+
+
+### unsubscribe(packName)
+
+Unsubscribes any listeners associated with the offline pack.<br/>It's a good idea to call this on componentWillUnmount.
+
+#### arguments
+| Name | Type | Required | Description  |
+| ---- | :--: | :------: | :----------: |
+| `packName` | `String` | `Yes` | Name of the offline pack. |
+
+
+
+```javascript
+Mapbox.offlineManager.unsubscribe('packName')
+```
+
+
 

@@ -5,10 +5,10 @@ import Mapbox, {
   offlineManagerLegacy,
   StyleURL,
 } from '@rnmapbox/maps';
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button, Dimensions, TextInput } from 'react-native';
 
-import { ExampleWithMetadata } from '../common/ExampleMetadata'; // exclude-from-doc
+import type { ExampleWithMetadata } from '../common/ExampleMetadata'; // exclude-from-doc
 
 const CENTER_COORD: [number, number] = [-73.970895, 40.723279];
 const MAPBOX_VECTOR_TILE_SIZE = 512;
@@ -23,7 +23,7 @@ const OfflineLegacyExample = () => {
   const [tileLimit, setTileLimit] = useState(6000);
   const [timeout, setTimeout] = useState(60);
 
-  const map = useRef();
+  const map = useRef<MapView>(null);
 
   return (
     <>
@@ -129,7 +129,7 @@ const OfflineLegacyExample = () => {
             const mapCenter = await map.current.getCenter();
 
             const bounds: [number, number, number, number] = geoViewport.bounds(
-              mapCenter,
+              [mapCenter[0]!, mapCenter[1]!],
               13,
               [width, height],
               MAPBOX_VECTOR_TILE_SIZE,
@@ -151,9 +151,9 @@ const OfflineLegacyExample = () => {
 
             const pack = await offlineManagerLegacy.createPack(
               options,
-              (region, status) =>
+              (_region, status) =>
                 console.log('=> progress callback region:', 'status: ', status),
-              (region, error) =>
+              (_region, error) =>
                 console.error('=> error callback region:', 'error:', error),
             );
 
