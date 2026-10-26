@@ -1,9 +1,16 @@
 {
-  "name": "@rnmapbox/maps",
-  "version": "10.3.11",
+  "name": "@gnative/rnmapbox",
+  "version": "10.3.11-contours.1",
   "description": "Community-supported, open-source React Native library for building maps using Mapbox native maps SDK for iOS and Android",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.native.d.ts",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gnative/rnmapbox.git"
+  },
   "exports": {
     ".": {
       "source": "./src/index.ts",
@@ -64,10 +71,6 @@
     "react-native",
     "maps"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/rnmapbox/maps"
-  },
   "author": "React Native Mapbox Team (rnmapbox@gmail.com)",
   "license": "MIT",
   "bugs": {
@@ -77,10 +80,6 @@
   "mapbox": {
     "ios": "~> 11.23.1",
     "android": "11.23.1"
-  },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/",
-    "access": "public"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.28.4",
