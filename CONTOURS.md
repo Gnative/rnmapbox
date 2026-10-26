@@ -12,6 +12,25 @@ This forked version adds serveral updates needed for Contours
 # Publishing
 
 Ensure you have an `.npmrc` file with credentials.
+GITHUB_TOKEN shoud lexport from your .bashrc file
 
-1. Update package.json name 
+```
+@gnative:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+1. Update package.json to use 
+```
+{
+  "name": "@gnative/rnmapbox",
+  "version": "PUBLISH_VERION",
+  "publishConfig": {
+      "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gnative/rnmapbox.git"
+  },
+}
+```
 2. `npm publish`
