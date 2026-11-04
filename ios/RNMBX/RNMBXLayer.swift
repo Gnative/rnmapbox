@@ -302,6 +302,10 @@ public class RNMBXLayer : UIView, RNMBXMapComponent, RNMBXSourceConsumer {
       Logger.log(level:.warn, message: "RNMBXLayer.removeFromMap - unmetPositionDependency: layer: \(optional: id) was waiting for layer: \(optional: waitingForID) but it hasn't added to map")
     }
 
+    // Source/map teardown and React unmounts can both request layer removal.
+    // A style reload may also have removed the layer before cleanup runs.
+    guard styleLayerExists(style, id: self.id) else { return }
+
     do {
       try style.removeLayer(withId: self.id)
     } catch {
